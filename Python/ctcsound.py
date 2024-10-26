@@ -227,7 +227,6 @@ libcsound.csoundDestroy.argtypes = [CSOUND_p]
 
 # Attributes
 libcsound.csoundGetVersion.restype = ct.c_int32
-libcsound.csoundGetAPIVersion.restype = ct.c_int32
 libcsound.csoundGetSr.restype = MYFLT
 libcsound.csoundGetSr.argtypes = [CSOUND_p]
 libcsound.csoundGetKr.restype = MYFLT
@@ -252,7 +251,6 @@ libcsound.csoundSetGlobalEnv.restype = ct.c_int32
 libcsound.csoundSetGlobalEnv.argtypes = [ct.c_char_p, ct.c_char_p]
 libcsound.csoundSetOption.restype = ct.c_int32
 libcsound.csoundSetOption.argtypes = [CSOUND_p, ct.c_char_p]
-libcsound.csoundSetParams.argtypes = [CSOUND_p, ct.POINTER(CsoundParams)]
 libcsound.csoundGetParams.argtypes = [CSOUND_p, ct.POINTER(CsoundParams)]
 libcsound.csoundGetDebug.restype = ct.c_int32
 libcsound.csoundGetDebug.argtypes = [CSOUND_p]
@@ -563,10 +561,6 @@ class Csound:
         """Returns the version number times 1000 (5.00.0 = 5000)."""
         return libcsound.csoundGetVersion()
 
-    def API_version(self):
-        """Returns the API version number times 100 (1.00 = 100)."""
-        return libcsound.csoundGetAPIVersion()
-
     def sr(self):
         """Returns the number of audio sample frames per second."""
         return libcsound.csoundGetSr(self.cs)
@@ -642,17 +636,6 @@ class Csound:
         Returns zero on success.
         """
         return libcsound.csoundSetOption(self.cs, cstring(option))
-
-    def set_params(self, params):
-        """Configures Csound with a given set of parameters.
-
-        These parameters are defined in the CsoundParams structure.
-        They are the part of the OPARMS struct that are configurable through
-        command line flags.
-        The CsoundParams structure can be obtained using params().
-        These options should only be changed before performance has started.
-        """
-        libcsound.csoundSetParams(self.cs, ct.byref(params))
 
     def params(self, params):
         """Gets the current set of parameters from a CSOUND instance.

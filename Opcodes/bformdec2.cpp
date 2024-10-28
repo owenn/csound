@@ -1723,6 +1723,13 @@ static int32_t ihoambdec(CSOUND *csound, HOAMBDEC* p)
     return OK;
 }
 
+#ifdef BARE_METAL
+static double readFilter(HOAMBDEC* p, int32_t i, int32_t j);
+static void insertFilter(HOAMBDEC* p, double val, int32_t j);
+static void process_nfc(CSOUND *csound, HOAMBDEC* p, int32_t signal_order, int32_t n, int32_t j, int32_t in_ix, int32_t sr,
+                        int32_t ksmps);
+#endif
+
 /* hoambdec process routine */
 static int32_t ahoambdec(CSOUND *csound, HOAMBDEC* p)
 {

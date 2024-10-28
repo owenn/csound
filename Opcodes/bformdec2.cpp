@@ -895,9 +895,9 @@ typedef struct {
 
 typedef struct FCOMPLEX {double r,i;} fcomplex;
 
-static double readFilter(HOAMBDEC*, int32_t, int);
-static void insertFilter(HOAMBDEC*,double, int);
-static void process_nfc(CSOUND*,HOAMBDEC*, int, int, int, int, int, int);
+static double readFilter(HOAMBDEC*, int32_t, int32_t);
+static void insertFilter(HOAMBDEC*,double, int32_t);
+static void process_nfc(CSOUND*,HOAMBDEC*, int32_t, int32_t, int32_t, int32_t, int32_t, int32_t);
 
 #ifndef MAX
 #define MAX(a,b) ((a>b)?(a):(b))
@@ -1722,6 +1722,7 @@ static int32_t ihoambdec(CSOUND *csound, HOAMBDEC* p)
     csound->AuxAlloc(csound, sizeof(MYFLT)*nsmps, &p->out_binaural1);
     return OK;
 }
+
 
 /* hoambdec process routine */
 static int32_t ahoambdec(CSOUND *csound, HOAMBDEC* p)

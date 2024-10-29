@@ -1419,14 +1419,12 @@ PUBLIC CSOUND *csoundCreate(void *hostdata, const char *opcodedir)
   if (init_done != 1) {
     if (csoundInitialize(0) < 0) return NULL;
   }
-
   csound = (CSOUND*) malloc(sizeof(CSOUND));
   if (UNLIKELY(csound == NULL)) return NULL;
   memcpy(csound, &cenviron_, sizeof(CSOUND));
   init_getstring(csound);
   csound->oparms = &(csound->oparms_);
   csound->hostdata = hostdata;
-  csound->opcodedir = cs_strdup(csound, (char *) opcodedir);
   p = (csInstance_t*) malloc(sizeof(csInstance_t));
   if (UNLIKELY(p == NULL)) {
     free(csound);
@@ -1437,6 +1435,10 @@ PUBLIC CSOUND *csoundCreate(void *hostdata, const char *opcodedir)
   p->nxt = (csInstance_t*) instance_list;
   instance_list = p;
   csoundUnLock();
+  // no cs_strdup yet so we use strdup and
+  // free it later.
+  if(opcodedir != NULL) 
+    csound->opcodedir = strdup(opcodedir);
   csoundReset(csound);
   csound->API_lock = csoundCreateMutex(1);
   allocate_message_queue(csound);

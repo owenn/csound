@@ -1436,7 +1436,7 @@ PUBLIC CSOUND *csoundCreate(void *hostdata, const char *opcodedir)
   instance_list = p;
   csoundUnLock();
   // no cs_strdup yet so we use strdup and
-  // free it later.
+  // free it later in csoundDestroy
   if(opcodedir != NULL) 
     csound->opcodedir = strdup(opcodedir);
   csoundReset(csound);
@@ -1506,6 +1506,8 @@ PUBLIC void csoundDestroy(CSOUND *csound)
     //csoundLockMutex(csound->API_lock);
     csoundDestroyMutex(csound->API_lock);
   }
+  // free opcodedir
+  free(csound->opcodedir);
   /* clear the pointer */
   // *(csound->self) = NULL;
   free((void*) csound);
@@ -3422,6 +3424,7 @@ static void reset(CSOUND *csound)
   memcpy((void*) csound, (void*) saved_env, (size_t) length);
   csound->oparms = &(csound->oparms_);
   csound->hostdata = saved_env->hostdata;
+  csound->opcodedir = saved_env->opcodedir;
   p1 = (void*) &(csound->first_callback_);
   p2 = (void*) &(csound->last_callback_);
   length = (uintptr_t) p2 - (uintptr_t) p1;

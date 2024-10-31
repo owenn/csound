@@ -722,21 +722,6 @@ extern "C" {
   PUBLIC void csoundSetRTAudioModule(CSOUND *csound, const char *module);
 
   /**
-   * retrieves a module name and type ("audio" or "midi") given a
-   * number Modules are added to list as csound loads them returns
-   * CSOUND_SUCCESS on success and CSOUND_ERROR if module number
-   * was not found
-   *
-   * \code
-   *  char *name, *type;
-   *  int32_t n = 0;
-   *  while(!csoundGetModule(csound, n++, &name, &type))
-   *       printf("Module %d:  %s (%s) \n", n, name, type);
-   * \endcode
-   */
-
-
-  /**
    * Returns the address of the Csound audio input working buffer (spin).
    * Enables external software to write audio into Csound before calling
    * csoundPerformKsmps.

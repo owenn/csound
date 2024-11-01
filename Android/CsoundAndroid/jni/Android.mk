@@ -66,6 +66,7 @@ $(CSOUND_SRC_ROOT)/InOut/circularbuffer.c \
 $(CSOUND_SRC_ROOT)/OOps/aops.c \
 $(CSOUND_SRC_ROOT)/OOps/bus.c \
 $(CSOUND_SRC_ROOT)/OOps/cmath.c \
+$(CSOUND_SRC_ROOT)/OOps/complex_ops.c \
 $(CSOUND_SRC_ROOT)/OOps/diskin2.c \
 $(CSOUND_SRC_ROOT)/OOps/disprep.c \
 $(CSOUND_SRC_ROOT)/OOps/dumpf.c \

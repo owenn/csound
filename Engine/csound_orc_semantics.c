@@ -38,17 +38,16 @@
 
 extern char *csound_orcget_text ( void *scanner );
 static int32_t is_label(char* ident, CONS_CELL* labelList);
-
 extern uint64_t csound_orcget_locn(void *);
 extern  char argtyp2(char*);
 extern  int32_t tree_arg_list_count(TREE *);
 void print_tree(CSOUND *, char *, TREE *);
+char *remove_type_quoting(CSOUND *csound, const char *outype);
 
 /* from csound_orc_compile.c */
 extern int32_t argsRequired(char* arrayName);
 extern char** splitArgs(CSOUND* csound, char* argString);
 extern int32_t pnum(char*);
-
 OENTRIES* find_opcode2(CSOUND*, char*);
 char* resolve_opcode_get_outarg(CSOUND* csound,
                                 OENTRIES* entries, char* inArgTypes);
@@ -1143,21 +1142,35 @@ char* resolve_opcode_get_outarg(CSOUND* csound, OENTRIES* entries,
    compatible with the ones found in OENTRY's.  splitArgs converts back
    to internal representation. */
 char* convert_internal_to_external(CSOUND* csound, char* arg) {
-  int32_t i, dimensions;
-  char *start = arg;
-  char *retVal, *current;;
+  int32_t i = 0, dimensions;
+  char *start;
+  char *retVal, *current;
   uint64_t nameLen, len = strlen(arg);
+  char *type;
 
   if (arg == NULL || len == 1) {
     return arg;
   }
 
-  if (strchr(arg, '[') == NULL) {
+  // VL 15.10.24
+  // synthetic args reach here with
+  // : prepended and ; appended to name
+  // so we need to remove them to avoid
+  // accummulation
+  // now remove any : or ; leftover in typename
+  type = remove_type_quoting(csound, arg);
+  
+  // update arg & len
+  arg = type;
+  len = strlen(arg);
+  start = arg;
+  
+  if (strchr(type, '[') == NULL) {
     /* User-Defined Struct */
     retVal = csound->Malloc(csound, sizeof(char) * (len + 3));
     current = retVal;
     *current++ = ':';
-    strncpy(current, arg, len);
+    strncpy(current, type, len);
     current += len;
     *current++ = ';';
     *current = '\0';
@@ -1169,7 +1182,7 @@ char* convert_internal_to_external(CSOUND* csound, char* arg) {
     arg++;
     dimensions++;
   }
-
+   
   nameLen = len - (arg - start) - 1;
 
   if (nameLen > 1) {
@@ -1193,7 +1206,7 @@ char* convert_internal_to_external(CSOUND* csound, char* arg) {
     *current++ = ']';
   }
   *current = '\0';
-  //csound->Free(csound, arg);
+  csound->Free(csound, type);
   return retVal;
 }
 
@@ -1201,7 +1214,7 @@ char* convert_internal_to_external(CSOUND* csound, char* arg) {
 char* convert_external_to_internal(CSOUND* csound, char* arg) {
   int32_t i, dimensions;
   char* retVal;
-
+  
   if (arg == NULL || *(arg + 1) != '[') {
     return arg;
   }
@@ -1244,7 +1257,9 @@ char* get_arg_string_from_tree(CSOUND* csound, TREE* tree,
       // if we failed to find argType, exit from parser
       csound->Die(csound, "Could not parse type for argument");
     } else {
+
       argType = convert_internal_to_external(csound, argType);
+
       argsLen += strlen(argType);
       argTypes[index++] = argType;
     }
@@ -1502,6 +1517,7 @@ void add_arg(CSOUND* csound, char* varName, char* annotation, TYPE_TABLE* typeTa
   void* typeArg = NULL;
 
   t = varName;
+
   if (*t == '#') t++;
   pool = (*t == 'g') ? typeTable->globalPool : typeTable->localPool;
 
@@ -1516,6 +1532,8 @@ void add_arg(CSOUND* csound, char* varName, char* annotation, TYPE_TABLE* typeTa
 
       if (*t == '#') t++;
       if (*t == 'g') t++;
+      
+      
 
       if (*t == '[' || *t == 't') { /* Support legacy t-vars */
         int32_t dimensions = 1;
@@ -1536,6 +1554,8 @@ void add_arg(CSOUND* csound, char* varName, char* annotation, TYPE_TABLE* typeTa
       }
 
       argLetter[0] = (*t == 't') ? '[' : *t; /* Support legacy t-vars */
+      
+      
 
       type = csoundGetTypeWithVarTypeName(csound->typePool, argLetter);
     }

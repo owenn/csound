@@ -35,6 +35,10 @@
 #include "csound_orc_expressions.h"
 #include "csound_orc_semantics.h"
 
+#if defined(_WIN32) || defined(_WIN64)
+# define strtok_r strtok_s
+#endif
+
 extern char *csound_orcget_text ( void *scanner );
 static int32_t is_label(char* ident, CONS_CELL* labelList);
 
@@ -1504,8 +1508,6 @@ void add_arg(CSOUND* csound, char* varName, char* annotation, TYPE_TABLE* typeTa
       if (*t == 'g') pool = typeTable->globalPool;
       if (*t == 'g') t++;
       
-      
-
       if (*t == '[' || *t == 't') { /* Support legacy t-vars */
         int32_t dimensions = 1;
         const CS_TYPE* varType;

@@ -176,6 +176,7 @@ def runTest():
     ["testmidichannels.csd", "test use of mapped multiport channels"],
     ["test_max_table_len.csd", "test max table length"],
     ["test_complex_numbers.csd", "testing complex number operations"],
+    ["test_schedule_named_instance.csd", "testing schedule with named instr instance"],
     ]
 
     arrayTests = [["arrays/arrays_i_local.csd", "local i[]"],

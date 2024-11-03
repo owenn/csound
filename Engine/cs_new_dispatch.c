@@ -351,7 +351,7 @@ taskID dag_get_task(CSOUND *csound, int32_t index, int32_t numThreads, taskID ne
 #ifndef WIN32        
         if (ATOMIC_CAS(&(task_status[i].s), current_task_status, INPROGRESS)) {
 #else
-if (ATOMIC_CAS(&(task_status[i].s), (long *)current_task_status, INPROGRESS)) {
+          if (ATOMIC_CAS((long *) &(task_status[i].s), current_task_status, INPROGRESS)) {
 #endif
           return (taskID)i;
         }

@@ -62,7 +62,7 @@ TEST_F (MessageBufferTests, testBufferRun)
     while (csoundGetMessageCnt(csound)) {
         const char * msg = csoundGetFirstMessage(csound);
         ASSERT_TRUE (msg != NULL);
-        csoundPopFirstMessage(csound);
         printf("CSOUND MESSAGE: %s", msg);
+        csoundPopFirstMessage(csound);
     }
 }

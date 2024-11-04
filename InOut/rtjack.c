@@ -1292,7 +1292,7 @@ static int32_t midi_in_open(CSOUND *csound,
       (RtJackMIDIGlobals*) csound->QueryGlobalVariableNoCheck(csound,
                                                               "_rtjackMIDIGlobals");
 
-    sprintf(clientName, "%s_in", pm->clientName);
+    snprintf(clientName, MAX_NAME_LEN+3, "%s_in", pm->clientName);
     if (UNLIKELY((jack_client =
                  jack_client_open(clientName, 0, NULL)) == NULL)){
       *userData = NULL;
@@ -1405,7 +1405,7 @@ static int32_t midi_out_open(CSOUND *csound, void **userData,
     pm =
       (RtJackMIDIGlobals*) csound->QueryGlobalVariableNoCheck(csound,
                                                               "_rtjackMIDIGlobals");
-    sprintf(clientName, "%s_out", pm->clientName);
+    snprintf(clientName, MAX_NAME_LEN+4, "%s_out", pm->clientName);
     if(UNLIKELY((jack_client =
                  jack_client_open(clientName, 0, NULL)) == NULL)){
       *userData = NULL;

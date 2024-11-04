@@ -500,6 +500,7 @@ static int32_t paBlockingReadWriteStreamCallback(const void *input,
  {
   PA_BLOCKING_STREAM  *pabs;
   int32_t     i = 0, samples = nbytes / (int32_t) sizeof(MYFLT);
+  int32_t    ndx;
 
   pabs = (PA_BLOCKING_STREAM*) *(csound->GetRtRecordUserData(csound));
   if (pabs == NULL) {
@@ -511,14 +512,14 @@ static int32_t paBlockingReadWriteStreamCallback(const void *input,
     csound->Die(csound, "%s",
     Str("Failed to initialise real time audio input"));
 }
-
+  ndx = pabs->currentInputIndex;
   do {
-  buffer[i] = (MYFLT) pabs->inputBuffer[pabs->currentInputIndex++];
+  buffer[i] = (MYFLT) pabs->inputBuffer[ndx++];
 #ifndef __APPLE__  
   if (pabs->inParm.nChannels == 1)
-    pabs->currentInputIndex++;
+    ndx++;
 #endif  
-  if (pabs->currentInputIndex >= pabs->inBufSamples) {
+  if (ndx >= pabs->inBufSamples) {
   if (pabs->mode == 1) {
 #if NO_FULLDUPLEX_PA_LOCK
   if (!pabs->noPaLock)
@@ -526,10 +527,10 @@ static int32_t paBlockingReadWriteStreamCallback(const void *input,
     csound->NotifyThreadLock(pabs->paLock);
   csound->WaitThreadLock(pabs->clientLock, (size_t) 500);
 }
-  pabs->currentInputIndex = 0;
+  ndx = 0;
 }
 } while (++i < samples);
-
+  pabs->currentInputIndex = ndx;
   return nbytes;
 }
 
@@ -539,6 +540,7 @@ static int32_t paBlockingReadWriteStreamCallback(const void *input,
  {
   PA_BLOCKING_STREAM  *pabs;
   int32_t     i = 0, samples = nbytes / (int32_t) sizeof(MYFLT);
+  int32_t     ndx;
 
   pabs = (PA_BLOCKING_STREAM*) *(csound->GetRtPlayUserData(csound));
   if (pabs == NULL)
@@ -546,22 +548,23 @@ static int32_t paBlockingReadWriteStreamCallback(const void *input,
 #ifdef WIN32
   pabs->paused = 0;
 #endif
-
+  ndx = pabs->currentOutputIndex;
   do {
-  pabs->outputBuffer[pabs->currentOutputIndex++] = (float) buffer[i];
+  pabs->outputBuffer[ndx++] = (float) buffer[i];
 #ifndef __APPLE__  
   if (pabs->outParm.nChannels == 1)
-    pabs->outputBuffer[pabs->currentOutputIndex++] = (float) buffer[i];
+    pabs->outputBuffer[ndx++] = (float) buffer[i];
 #endif  
-  if (pabs->currentOutputIndex >= pabs->outBufSamples) {
+  if (ndx >= pabs->outBufSamples) {
 #if NO_FULLDUPLEX_PA_LOCK
   if (!pabs->noPaLock)
 #endif
     csound->NotifyThreadLock(pabs->paLock);
   csound->WaitThreadLock(pabs->clientLock, (size_t) 500);
-  pabs->currentOutputIndex = 0;
+  ndx = 0;
 }
 } while (++i < samples);
+  pabs->currentOutputIndex = ndx;
 }
 
  /* open for audio input */

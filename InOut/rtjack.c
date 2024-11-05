@@ -1125,9 +1125,9 @@ int32_t listDevices(CSOUND *csound, CS_AUDIODEVICE *list, int32_t isOutput){
 }
 
 typedef struct RtJackMIDIGlobals_ {
-  char clientName[MAX_NAME_LEN];
-  char inputPortName[MAX_NAME_LEN];
-  char outputPortName[MAX_NAME_LEN];
+  char clientName[MAX_NAME_LEN + 1];
+  char inputPortName[MAX_NAME_LEN + 1];
+  char outputPortName[MAX_NAME_LEN + 1];
 } RtJackMIDIGlobals;
 
 
@@ -1219,8 +1219,8 @@ PUBLIC int32_t csoundModuleCreate(CSOUND *csound)
     strcpy(&(pm->outputPortName[0]), "port");
     /*   client name */
     i = jack_client_name_size();
-    if (i > (MAX_NAME_LEN + 1))
-      i = (MAX_NAME_LEN + 1);
+    if (i > MAX_NAME_LEN)
+      i = MAX_NAME_LEN;
     csound->CreateConfigurationVariable(csound, "jack_midi_client",
                                         (void*) &(pm->clientName[0]),
                                         CSOUNDCFG_STRING, 0, NULL, &i,
@@ -1230,17 +1230,17 @@ PUBLIC int32_t csoundModuleCreate(CSOUND *csound)
 
     /*   input port name */
     i = jack_port_name_size() - 3;
-    if (i > (MAX_NAME_LEN + 1))
-      i = (MAX_NAME_LEN + 1);
+    if (i > MAX_NAME_LEN)
+      i = MAX_NAME_LEN;
     csound->CreateConfigurationVariable(csound, "jack_midi_inportname",
                                         (void*) &(pm->inputPortName[0]),
                                         CSOUNDCFG_STRING, 0, NULL, &i,
                                         Str("JACK MIDI input port name"
                                             "(default: port)"), NULL);
     /*   output port name */
-    i = jack_port_name_size() - 3;
-    if (i > (MAX_NAME_LEN + 1))
-      i = (MAX_NAME_LEN + 1);
+    i = jack_port_name_size() - 4;
+    if (i > MAX_NAME_LEN)
+      i = MAX_NAME_LEN;
     csound->CreateConfigurationVariable(csound, "jack_midi_outportname",
                                         (void*) &(pm->outputPortName[0]),
                                         CSOUNDCFG_STRING, 0, NULL, &i,
@@ -1286,13 +1286,13 @@ static int32_t midi_in_open(CSOUND *csound,
     jack_port_t  *jack_port;
     jackMidiDevice *dev;
     RtJackMIDIGlobals *pm;
-    char clientName[MAX_NAME_LEN+3];
+    char clientName[MAX_NAME_LEN+4];
 
     pm =
       (RtJackMIDIGlobals*) csound->QueryGlobalVariableNoCheck(csound,
                                                               "_rtjackMIDIGlobals");
 
-    snprintf(clientName, MAX_NAME_LEN+3, "%s_in", pm->clientName);
+    snprintf(clientName, MAX_NAME_LEN+4, "%s_in", pm->clientName);
     if (UNLIKELY((jack_client =
                  jack_client_open(clientName, 0, NULL)) == NULL)){
       *userData = NULL;
@@ -1400,12 +1400,12 @@ static int32_t midi_out_open(CSOUND *csound, void **userData,
     jack_port_t  *jack_port;
     jackMidiDevice *dev;
     RtJackMIDIGlobals *pm;
-    char clientName[MAX_NAME_LEN+4];
+    char clientName[MAX_NAME_LEN+5];
 
     pm =
       (RtJackMIDIGlobals*) csound->QueryGlobalVariableNoCheck(csound,
                                                               "_rtjackMIDIGlobals");
-    snprintf(clientName, MAX_NAME_LEN+4, "%s_out", pm->clientName);
+    snprintf(clientName, MAX_NAME_LEN+5, "%s_out", pm->clientName);
     if(UNLIKELY((jack_client =
                  jack_client_open(clientName, 0, NULL)) == NULL)){
       *userData = NULL;

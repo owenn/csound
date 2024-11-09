@@ -387,7 +387,7 @@ const CS_TYPE CS_VAR_TYPE_ARRAY = {
 
 
 const CS_TYPE CS_VAR_TYPE_INSTR = {
-  "Instr", "instrument definition reference", CS_ARG_TYPE_BOTH,
+  "InstrDef", "instrument definition reference", CS_ARG_TYPE_BOTH,
   createInstrRef, instrRef_copy_value, NULL, NULL, 0
 };
 

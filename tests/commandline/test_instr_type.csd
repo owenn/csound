@@ -4,7 +4,7 @@
 </CsOptions>
 <CsInstruments>
 
-opcode assert(g:Instr,h:Instr):void
+opcode assert(g:InstrDef,h:InstrDef):void
 if nstrnum(g) != nstrnum(h) then
   prints "assert error for instrument number\n"
   exitnow(-1)
@@ -18,7 +18,7 @@ endif
 endop
 
 instr Test
- test2:Instr = Test
+ test2:InstrDef = Test
  assert(test2, this_instr)
  schedule this_instr, 0.5, 0.5
 endin

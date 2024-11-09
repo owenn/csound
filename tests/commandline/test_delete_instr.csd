@@ -7,7 +7,7 @@
 
 
 instr 1
-myinstr:Instr = createinstr("out oscili(p4,p5)")
+myinstr:InstrDef = createinstr("out oscili(p4,p5)")
 schedule(myinstr, 0, 1, 0.5, 440)
 if release() != 0 then
   printks "deleting instr %d\n",1, nstrnum(myinstr)

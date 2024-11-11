@@ -129,7 +129,7 @@ static const char *csoundGetStrsets(CSOUND *csound, int32_t n) {
   else return csound->strsets[n];
 }
 
-static int csoundGetStrsetsMax(CSOUND *csound) {
+static int32_t csoundGetStrsetsMax(CSOUND *csound) {
   return csound->strsmax;
 }
 

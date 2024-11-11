@@ -1379,7 +1379,7 @@ static inline double PHMOD1(double p) {
     /** Get current compiled instrument list */
     INSTRTXT **(*GetInstrumentList)(CSOUND *);
     /** Get the max number of strsets */
-    int (*GetStrsetsMax)(CSOUND *);
+    int32_t (*GetStrsetsMax)(CSOUND *);
     /** Get a string from Strsets */
     const char *(*GetStrsets)(CSOUND *, int32_t);    
 

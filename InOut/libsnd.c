@@ -76,7 +76,7 @@ static inline void spout_interleave(CSOUND *csound, int32_t scal) {
   spoutrem -= (end-start)*nchnls;
   csound->libsndStatics.outbufrem -= (end-start)*nchnls;
   for(j=start; j<end; j++) {
-   for(i=0; i<nchnls;i++) {
+    for(i=0; i< (int32_t) nchnls;i++) {
      absamp = spinter[i*ksmps+j];
       // built inlimiter start ****
       // There is a rather awkward problem in reporting out of range not being

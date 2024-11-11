@@ -208,13 +208,14 @@ extern "C" {
 #define CURTIME_inc (((double)csound->ksmps)/((double)csound->esr))
 
 #ifndef  SHORT_TABLE_LENGTH  // long max table length is the default
-static const uint32_t MAXLEN = 1U << 30;
-static const double FMAXLEN = (double) (1U << 30);
-static const uint32_t PHMASK = (1U << 30) - 1U;
+// MAXLEN is the largest positive 32bit signed pow of two  
+static const int32_t MAXLEN = 1 << 30;
+static const double FMAXLEN = (double) (1 << 30);
+static const uint32_t PHMASK = (1 << 30) - 1;
 #else   // this is the original max table length
-static const uint32_t MAXLEN =  1U << 24;
-static const double FMAXLEN = (double) (1U << 24);
-static const double FMAXLEN = (1U << 24) - 1;
+static const int32_t MAXLEN =  1 << 24;
+static const double FMAXLEN = (double) (1 << 24);
+static const uint32_t PHMASK = (1 << 24) - 1;
 #endif
 
 

@@ -179,6 +179,7 @@ def runTest():
     ["test_delete_instr.csd", "test creating and deleting instr"],
     ["test_create_instr.csd", "testing creating and scheduling instr"],
     ["test_complex_numbers.csd", "testing complex number operations"],
+    ["test_schedule_named_instance.csd", "testing schedule with named instr instance"],
     ]
 
     arrayTests = [["arrays/arrays_i_local.csd", "local i[]"],

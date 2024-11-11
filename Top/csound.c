@@ -1599,7 +1599,7 @@ inline void advanceINSDSPointer(INSDS ***start, int32_t num)
 
 inline static void mix_out(MYFLT *out, MYFLT *in,
                            uint32_t smps){
-  int32_t i;
+  uint32_t i;
   for(i=0; i < smps; i++) out[i] += in[i];
 }
 

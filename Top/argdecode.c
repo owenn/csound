@@ -1109,7 +1109,7 @@ static int32_t decode_long(CSOUND *csound, char *s, int32_t argc, char **argv)
         int32_t i = 1, n;
         s += 9;
         n = atoi(s);
-        while (i<=n && i< MAXLEN) i <<= 1;
+        while (i<=n && i < MAXLEN) i <<= 1;
         csound->sinelength = i;
         return 1;
       }

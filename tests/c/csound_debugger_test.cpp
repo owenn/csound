@@ -174,7 +174,6 @@ TEST_F (DebuggerTests, testBreakpointInstrument)
 int32_t count = 0;
 static void brkpt_cb5(CSOUND *csound, debug_bkpt_info_t *bkpt_info, void *userdata)
 {
-    debug_opcode_t *debug_opcode = bkpt_info->currentOpcode;
     count++;
 }
 

@@ -525,7 +525,11 @@ static int32_t send_srecv(CSOUND *csound, SOCKRECVT *p)
     memset(q, '\0', k);
  again:
     errno = 0;
+#ifndef WIN32    
     n = (int32_t) recv(p->conn, q, k, 0);
+#else
+    n = (int32_t) recv(p->conn, (char *) q, k, 0);
+#endif    
     if (n==0) {      /* Connection broken */
       if (p->res) *p->res = -1;
       close(p->sock);

@@ -124,6 +124,16 @@ extern OENTRY opcodlst_1[];
 #define STRING_HASH(arg) STRSH(arg)
 #define STRSH(arg) #arg
 
+static const char *csoundGetStrsets(CSOUND *csound, int32_t n) {
+  if(csound->strsets == NULL) return NULL;
+  else return csound->strsets[n];
+}
+
+static int32_t csoundGetStrsetsMax(CSOUND *csound) {
+  return csound->strsmax;
+}
+
+
 static const char *csoundFileError(CSOUND *csound, void *ff) {
   CSFILE *f = (CSFILE *) ff;
   switch(f->type) {
@@ -390,6 +400,8 @@ static const CSOUND cenviron_ = {
   csoundGetTieFlag,
   csoundGetReinitFlag,
   csoundGetInstrumentList,
+  csoundGetStrsetsMax,
+  csoundGetStrsets,
   csoundGetHostData,
   csoundGetCurrentTimeSamples,
   csoundGetInputBufferSize,

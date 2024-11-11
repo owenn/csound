@@ -124,6 +124,16 @@ extern OENTRY opcodlst_1[];
 #define STRING_HASH(arg) STRSH(arg)
 #define STRSH(arg) #arg
 
+static const char *csoundGetStrsets(CSOUND *csound, int32_t n) {
+  if(csound->strsets == NULL) return NULL;
+  else return csound->strsets[n];
+}
+
+static int32_t csoundGetStrsetsMax(CSOUND *csound) {
+  return csound->strsmax;
+}
+
+
 static const char *csoundFileError(CSOUND *csound, void *ff) {
   CSFILE *f = (CSFILE *) ff;
   switch(f->type) {
@@ -371,6 +381,16 @@ const CSOUND_UTIL *csoundGetCsoundUtility(CSOUND *csound) {
   return &csound->csound_util;
 }
 
+/* 
+  exact selects the type of search 
+ */
+static const OENTRY* csoundFindOpcode(CSOUND *csound, int32_t exact,
+                                char* opname, char* outargs,
+                                char* inargs) {
+  if(exact) return find_opcode_exact(csound, opname, outargs, inargs);
+  else return find_opcode_new(csound, opname, outargs, inargs);
+}
+
 static const CSOUND cenviron_ = {
   /* attributes  */
   csoundGetNchnls,
@@ -380,6 +400,8 @@ static const CSOUND cenviron_ = {
   csoundGetTieFlag,
   csoundGetReinitFlag,
   csoundGetInstrumentList,
+  csoundGetStrsetsMax,
+  csoundGetStrsets,
   csoundGetHostData,
   csoundGetCurrentTimeSamples,
   csoundGetInputBufferSize,
@@ -562,7 +584,7 @@ static const CSOUND cenviron_ = {
   /* opcodes and instruments  */
   csoundAppendOpcode,
   csoundAppendOpcodes,
-  find_opcode_exact,
+  csoundFindOpcode,
   /* RT audio IO and callbacks */
   csoundSetPlayopenCallback,
   csoundSetRtplayCallback,
@@ -1599,7 +1621,7 @@ inline void advanceINSDSPointer(INSDS ***start, int32_t num)
 
 inline static void mix_out(MYFLT *out, MYFLT *in,
                            uint32_t smps){
-  int32_t i;
+  uint32_t i;
   for(i=0; i < smps; i++) out[i] += in[i];
 }
 

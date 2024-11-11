@@ -208,13 +208,14 @@ extern "C" {
 #define CURTIME_inc (((double)csound->ksmps)/((double)csound->esr))
 
 #ifndef  SHORT_TABLE_LENGTH  // long max table length is the default
-static const uint32_t MAXLEN = 1U << 30;
-static const double FMAXLEN = (double) (1U << 30);
-static const uint32_t PHMASK = (1U << 30) - 1U;
+// MAXLEN is the largest positive 32bit signed pow of two  
+static const int32_t MAXLEN = 1 << 30;
+static const double FMAXLEN = (double) (1 << 30);
+static const uint32_t PHMASK = (1 << 30) - 1;
 #else   // this is the original max table length
-static const uint32_t MAXLEN =  1U << 24;
-static const double FMAXLEN = (double) (1U << 24);
-static const double FMAXLEN = (1U << 24) - 1;
+static const int32_t MAXLEN =  1 << 24;
+static const double FMAXLEN = (double) (1 << 24);
+static const uint32_t PHMASK = (1 << 24) - 1;
 #endif
 
 
@@ -1377,6 +1378,10 @@ static inline double PHMOD1(double p) {
     int32_t (*GetReinitFlag)(CSOUND *);
     /** Get current compiled instrument list */
     INSTRTXT **(*GetInstrumentList)(CSOUND *);
+    /** Get the max number of strsets */
+    int32_t (*GetStrsetsMax)(CSOUND *);
+    /** Get a string from Strsets */
+    const char *(*GetStrsets)(CSOUND *, int32_t);    
 
     void *(*GetHostData)(CSOUND *);
     int64_t (*GetCurrentTimeSamples)(CSOUND *);
@@ -1647,7 +1652,7 @@ static inline double PHMOD1(double p) {
                         int32_t (*perf)(CSOUND *, void *),
                         int32_t (*deinit)(CSOUND *, void *));
     int32_t (*AppendOpcodes)(CSOUND *, const OENTRY *opcodeList, int32_t n);
-    OENTRY* (*FindOpcode)(CSOUND*, char*, char* , char*);
+    const OENTRY* (*FindOpcode)(CSOUND*, int32_t exact, char*, char* , char*);
     /**@}*/
 
     /** @name RT audio IO module support */

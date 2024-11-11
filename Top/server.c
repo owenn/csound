@@ -298,22 +298,23 @@ static uintptr_t udp_recv(void *pdata){
         sscanf(orchestra+2+strlen(chn), "%s", addr);
         sport = atoi(orchestra+3+strlen(addr)+strlen(chn));
         if(*(orchestra+1) == '@') {
+          size_t slen = strlen(chn);
           val = csoundGetControlChannel(csound, chn, &err);
-          msg = (char *) csound->Calloc(csound, strlen(chn) + 32);
-          sprintf(msg, "%s::%f", chn, val);
+          msg = (char *) csound->Calloc(csound, slen + 32);
+          snprintf(msg, slen + 32, "%s::%f", chn, val);
         }
         else if (*(orchestra+1) == '%') {
           STRINGDAT* stringdat;
           if (csoundGetChannelPtr(csound, (void **) &stringdat, chn,
                                   CSOUND_STRING_CHANNEL | CSOUND_OUTPUT_CHANNEL)
               == CSOUND_SUCCESS) {
-            size_t size = stringdat->size;
+            size_t size = stringdat->size + strlen(chn) + 1;
             spin_lock_t *lock =
               (spin_lock_t *) csoundGetChannelLock(csound, (char*) chn);
-            msg = (char *) csound->Calloc(csound, strlen(chn) + size);
+            msg = (char *) csound->Calloc(csound, size);
             if (lock != NULL)
               csoundSpinLock(lock);
-            sprintf(msg, "%s::%s", chn, stringdat->data);
+            snprintf(msg, size, "%s::%s", chn, stringdat->data);
             if (lock != NULL)
               csoundSpinUnLock(lock);
           } else err = -1;

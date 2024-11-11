@@ -124,7 +124,7 @@ NM              [nm][ \t]+
                                        yyscanner);
 #if 0
                   if (PARM->isString==0) {
-                    sprintf(bb, "#sline %d ", csound_prsget_lineno(yyscanner));
+                    snprintf(bb, 80, "#sline %d ", csound_prsget_lineno(yyscanner));
                     corfile_puts(csound, bb, PARM->cf);
                   }
 #endif

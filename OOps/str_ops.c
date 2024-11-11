@@ -34,12 +34,12 @@
 
 #define STRSMAX 8
 
-#ifndef HAVE_SNPRINTF
-/* add any compiler/system that has snprintf() */
-#if defined(HAVE_C99)
-#define HAVE_SNPRINTF   1
-#endif
-#endif
+// VL since sprintf() is deprecated in modern C
+// we have to assume all SANE systems have snprintf()
+// there was a check for HAVE_SNPRINTF in this file
+// which was basically checking for C99.
+// It was removed as nowhere else in the
+// system we check for this.
 
 int32_t is_perf_thread(OPDS *p){
   return p->insdshead->init_done;
@@ -422,7 +422,6 @@ sprintf_opcode_(CSOUND *csound,
       case 'X':
       case 'u':
       case 'c':
-#ifdef HAVE_SNPRINTF
 	if (strlen(strseg) + 24 > (size_t)maxChars) {
 	  size_t offs = outstring - str->data;
 	  str->data = csound->ReAlloc(csound, str->data,
@@ -433,14 +432,8 @@ sprintf_opcode_(CSOUND *csound,
 	  str->size += 24;
 	  maxChars += 24;
 	  outstring = str->data + offs;
-	  //printf("maxchars = %d  %s\n", maxChars, strseg);
-	  //printf("size: %d \n",str->size);
-
 	}
 	n = snprintf(outstring, maxChars, strseg, (int32_t) MYFLT2LRND(*parm));
-#else
-	n = sprintf(outstring, strseg, (int32_t) MYFLT2LRND(*parm));
-#endif
 	break;
       case 'e':
       case 'E':
@@ -448,7 +441,6 @@ sprintf_opcode_(CSOUND *csound,
       case 'F':
       case 'g':
       case 'G':
-#ifdef HAVE_SNPRINTF
 	//printf("%d %d \n", str->size, strlen(str->data));
 	if (strlen(strseg) + 24 > (uint32_t)maxChars) {
 	  size_t offs = outstring - str->data;
@@ -463,9 +455,6 @@ sprintf_opcode_(CSOUND *csound,
 	}
 	//printf("%d %d \n", str->size, strlen(str->data));
 	n = snprintf(outstring, maxChars, strseg, (double)*parm);
-#else
-	n = sprintf(outstring, strseg, (double)*parm);
-#endif
 	break;
       case 's':
 	if (LIKELY(IS_STR_ARG(parm))) {

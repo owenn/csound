@@ -222,7 +222,10 @@ char *strarg2name(CSOUND *csound, char *s, void *p, const char *baseName,
           s = csound->Malloc(csound, n = (int32_t) strlen(baseName) + 21);
           snprintf(s, n, "%s%d", baseName, i);
         }
-        else sprintf(s, "%s%d", baseName, i); /* dubious */
+        else 
+          /* need enough memory as per requirements set above */
+          snprintf(s, strlen(baseName) + 21,
+                      "%s%d", baseName, i); 
       }
     }
     return s;

@@ -231,7 +231,7 @@ int32_t hfgens(CSOUND *csound, FUNC **ftpp, const EVTBLK *evtblkp, int32_t mode)
       ff.guardreq = ff.flen & 01;       /*  set guard request flg   */
       ff.flen &= -2L;                   /*  flen now w/o guardpt    */   
     }
-    if (ff.flen > MAXLEN)           
+    if (ff.flen >  MAXLEN)           
         return fterror(&ff, Str("illegal table length"));
     // now flen is set
     // test and set lobits

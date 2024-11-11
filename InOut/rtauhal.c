@@ -483,14 +483,14 @@ int32_t AuHAL_open(CSOUND *csound, const csRtAudioParams * parm,
       AURenderCallbackStruct input;
       AudioBufferList *CAInputData =
         (AudioBufferList*)csound->Malloc(csound,sizeof(UInt32)
-                                 + cdata->inchnls * sizeof(AudioBuffer));
+                                 + cdata->inchnls * sizeof(AudioBufferList));
       CAInputData->mNumberBuffers = cdata->inchnls;
       for (i = 0; i < cdata->inchnls; i++) {
         CAInputData->mBuffers[i].mNumberChannels = 1;
         CAInputData->mBuffers[i].mDataByteSize =
           bufframes * sizeof(Float32);
         CAInputData->mBuffers[i].mData =
-          csound->Calloc(csound,bufframes* sizeof(Float32));
+          csound->Calloc(csound,bufframes*sizeof(Float32));
       }
       cdata->inputdata = CAInputData;
 

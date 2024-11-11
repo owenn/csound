@@ -559,11 +559,13 @@ static int32_t vcoset(CSOUND *csound, VCO *p)
   //MYFLT ndsave;
 
   //ndsave = (MYFLT) ndel;
-  if (UNLIKELY((ftp = csound->FTFind(csound, p->sine)) == NULL))
+  if (UNLIKELY((ftp = csound->FTFind(csound, p->sine)) == NULL)) {
     return NOTOK;
+  } else {
+    p->ftp = ftp;
+  }
   p->floatph = !(IS_POW_TWO(p->ftp->flen));
 
-  p->ftp = ftp;
   if (LIKELY(*p->iphs >= FL(0.0))) {
     p->lphs = (int32)(*p->iphs * FL(0.5) * FMAXLEN);
     p->fphs = *p->iphs;

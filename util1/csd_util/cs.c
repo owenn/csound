@@ -436,7 +436,7 @@ int main(int argc, char **argv)
     if (s != NULL)      /* get default setting from CSOUND, if available */
       strncpy(tmp, s, 255);
     for (i = (int) strlen(optlst); --i >= 0; ) {
-      sprintf(tmp2, "CSOUND_%c", optlst[i]);
+      snprintf(tmp2, 256, "CSOUND_%c", optlst[i]);
       s = getenv(tmp2);
       if (s != NULL) {
         strncpy(tmp, s, 255);
@@ -457,7 +457,7 @@ int main(int argc, char **argv)
     copy_options(&s2, s);
     /* any options from the environment, */
     for (i = 0; i < (int) strlen(optlst); i++) {
-      sprintf(tmp2, "CSFLAGS_%c", optlst[i]);
+      snprintf(tmp2, 256, "CSFLAGS_%c", optlst[i]);
       s = getenv(tmp2);
       if (s != NULL)
         copy_options(&s2, s);

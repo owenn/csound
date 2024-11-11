@@ -381,6 +381,16 @@ const CSOUND_UTIL *csoundGetCsoundUtility(CSOUND *csound) {
   return &csound->csound_util;
 }
 
+/* 
+  exact selects the type of search 
+ */
+static const OENTRY* csoundFindOpcode(CSOUND *csound, int32_t exact,
+                                char* opname, char* outargs,
+                                char* inargs) {
+  if(exact) return find_opcode_exact(csound, opname, outargs, inargs);
+  else return find_opcode_new(csound, opname, outargs, inargs);
+}
+
 static const CSOUND cenviron_ = {
   /* attributes  */
   csoundGetNchnls,
@@ -574,7 +584,7 @@ static const CSOUND cenviron_ = {
   /* opcodes and instruments  */
   csoundAppendOpcode,
   csoundAppendOpcodes,
-  find_opcode_exact,
+  csoundFindOpcode,
   /* RT audio IO and callbacks */
   csoundSetPlayopenCallback,
   csoundSetRtplayCallback,

@@ -1652,7 +1652,7 @@ static inline double PHMOD1(double p) {
                         int32_t (*perf)(CSOUND *, void *),
                         int32_t (*deinit)(CSOUND *, void *));
     int32_t (*AppendOpcodes)(CSOUND *, const OENTRY *opcodeList, int32_t n);
-    OENTRY* (*FindOpcode)(CSOUND*, char*, char* , char*);
+    const OENTRY* (*FindOpcode)(CSOUND*, int32_t exact, char*, char* , char*);
     /**@}*/
 
     /** @name RT audio IO module support */

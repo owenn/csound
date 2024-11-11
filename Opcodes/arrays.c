@@ -3223,7 +3223,7 @@ typedef struct {
   ARRAYDAT *tab, *tabin;
   STRINGDAT *str;
   int32_t    len;
-  OENTRY *opc;
+  const OENTRY *opc;
 } TABMAP;
 
 
@@ -3232,7 +3232,7 @@ static int32_t tabmap_set(CSOUND *csound, TABMAP *p)
 {
   MYFLT *data, *tabin = p->tabin->data;
   int32_t n, size;
-  OENTRY *opc  = NULL;
+  const OENTRY *opc  = NULL;
   AEVAL  eval;
 
   if (UNLIKELY(p->tabin->data == NULL)||p->tabin->dimensions!=1)
@@ -3247,7 +3247,7 @@ static int32_t tabmap_set(CSOUND *csound, TABMAP *p)
   data =  p->tab->data;
 
 
-  opc = csound->FindOpcode(csound, p->str->data, "i", "i");
+  opc = csound->FindOpcode(csound, 1, p->str->data, "i", "i");
   if (UNLIKELY(opc == NULL))
     return csound->InitError(csound,  Str("%s not found"), p->str->data);
   p->opc = opc;
@@ -3257,7 +3257,7 @@ static int32_t tabmap_set(CSOUND *csound, TABMAP *p)
     opc->init(csound, (void *) &eval);
   }
 
-  opc = csound->FindOpcode(csound, p->str->data, "k", "k");
+  opc = csound->FindOpcode(csound, 1, p->str->data, "k", "k");
   p->opc = opc;
   return OK;
 }
@@ -3267,7 +3267,8 @@ static int32_t tabmap_perf(CSOUND *csound, TABMAP *p)
   /* FIXME; eeds check */
   MYFLT *data =  p->tab->data, *tabin = p->tabin->data;
   int32_t n, size;
-  OENTRY *opc  = p->opc;
+
+  const OENTRY *opc  = p->opc;
   AEVAL  eval;
 
   if (UNLIKELY(p->tabin->data == NULL) || p->tabin->dimensions !=1)

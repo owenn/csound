@@ -83,13 +83,14 @@ int32_t compile_str_i(CSOUND *csound, COMPILE *p){
 int32_t compile_instr(CSOUND *csound, CINSTR *p) {
   INSTRTXT **instrs = csound->GetInstrumentList(csound);
   int32_t num = 1;
+  size_t siz;
   char *code;
   const char *endin = "\n endin \n";
   // look for a free slot
   while(instrs[num] != NULL) num++;
-    code = csound->Calloc(csound, strlen(p->code->data)
-                               + strlen(endin) + 16);
-   sprintf(code, "instr %d\n%s%s", num, p->code->data, endin);
+  siz = strlen(p->code->data) + strlen(endin) + 16;
+  code = csound->Calloc(csound, siz);
+  snprintf(code, siz,"instr %d\n%s%s", num, p->code->data, endin);
 
   if(csound->GetDebug(csound)) csound->Message(csound, "%s \n", code);
   // compile code
@@ -112,9 +113,10 @@ int32_t compile_and_run_instr(CSOUND *csound, CARINSTR *p) {
   char *code;
   const char *endin = "\n endin \n";
   const char *name = "instr __ANONYMOUS__ \n";
-  code = csound->Calloc(csound, strlen(p->code->data)
-                        + strlen(name) + strlen(endin) + 1);
-  sprintf(code, "%s%s%s", name, p->code->data, endin);
+  size_t siz = strlen(p->code->data)
+    + strlen(name) + strlen(endin) + 1;
+  code = csound->Calloc(csound, siz);
+  snprintf(code, siz, "%s%s%s", name, p->code->data, endin);
   if(csound->GetDebug(csound))
     csound->Message(csound, "%s \n", code);
   // compile code

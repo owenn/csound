@@ -213,7 +213,7 @@ static int32_t sequencer(CSOUND *csound, SEQ *p)
         snprintf(buff+strlen(buff), 99-strlen(buff), "\n");
       }
       else
-        sprintf(buff, "i %0.2f 0 %f %f\n",
+        snprintf(buff, 100, "i %0.2f 0 %f %f\n",
                 inst, 60.0/(*p->kbpm)*p->riff->data[p->seq[i]],
                 p->data->data[p->seq[i]]);
       //printf("***Score;ine:%s", buff);

@@ -2151,7 +2151,7 @@ static int32_t arrprint_str(CSOUND *csound, ARRAYDAT *arr,
             currline[charswritten++] = ',';
             currline[charswritten++] = ' ';
         }
-        charswritten += sprintf(currline + charswritten, fmt, strs[i].data);
+        charswritten += snprintf(currline + charswritten, ARRPRINT_MAXLINE - charswritten, fmt, strs[i].data);
         if(charswritten >= linelength) {
             currline[charswritten+1] = '\0';
             csound->MessageS(csound, CSOUNDMSG_ORCH, " %s\n", (char*)currline);
@@ -2186,7 +2186,7 @@ static int32_t arrprint(CSOUND *csound, ARRAYDAT *arr,
             showidx = 1;
         }
         for(i=0; i<arr->sizes[0]; i++) {
-            charswritten += sprintf(currline+charswritten, fmt, in[i]);
+          charswritten += snprintf(currline+charswritten, ARRPRINT_MAXLINE - charswritten, fmt, in[i]);
             if(charswritten < linelength) {
                 currline[charswritten++] = ' ';
             } else {
@@ -2215,9 +2215,9 @@ static int32_t arrprint(CSOUND *csound, ARRAYDAT *arr,
         break;
     case 2:
         for(i=0; i<arr->sizes[0]; i++) {
-            charswritten += sprintf(currline+charswritten, " %3d: ", i);
+          charswritten += snprintf(currline+charswritten, ARRPRINT_MAXLINE - charswritten, " %3d: ", i);
             for(j=0; j<arr->sizes[1]; j++) {
-                charswritten += sprintf(currline+charswritten, fmt, *in);
+              charswritten += snprintf(currline+charswritten, ARRPRINT_MAXLINE - charswritten, fmt, *in);
                 if(charswritten < linelength) {
                     currline[charswritten++] = ' ';
                 }
@@ -2391,7 +2391,7 @@ ftprint_perf(CSOUND *csound, FTPRINT *p) {
     csound->MessageS(csound, CSOUNDMSG_ORCH,
                      "ftable %d:\n", (int32_t)*p->ifn);
     for(i=start; i < end; i+=step) {
-        charswritten += sprintf(currline+charswritten, fmt, ftable[i]);
+        charswritten += snprintf(currline+charswritten, ARRPRINT_MAXLINE - charswritten, fmt, ftable[i]);
         elemsprinted++;
         if(elemsprinted < numcols) {
             currline[charswritten++] = ' ';
@@ -2873,7 +2873,7 @@ sprintf_opcode_(CSOUND *csound,
             case 'X':
             case 'u':
             case 'c':
-                n = sprintf(outstring, strseg, (int32_t) MYFLT2LRND(*parm));
+                 n = snprintf(outstring, str->size, strseg, (int32_t) MYFLT2LRND(*parm));
                 break;
             case 'e':
             case 'E':
@@ -2881,7 +2881,7 @@ sprintf_opcode_(CSOUND *csound,
             case 'F':
             case 'g':
             case 'G':
-                n = sprintf(outstring, strseg, (double)*parm);
+                n = snprintf(outstring, str->size, strseg, (double)*parm);
                 break;
             case 's':
                 if(!IS_STRING_ARG(parm)) {

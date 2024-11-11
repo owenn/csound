@@ -54,6 +54,7 @@ TEST_F (MessageBufferTests, testBufferRun)
                                   "asig oscil 0.1, 440\n"
                                   "out asig\n"
                                   "endin\n");
+    ASSERT_EQ(result, CSOUND_SUCCESS);
     csoundReadScore(csound, "i 1 0 0.1\n");
     csoundStart(csound);
 

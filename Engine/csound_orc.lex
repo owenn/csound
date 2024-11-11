@@ -512,7 +512,7 @@ ORCTOKEN *do_at(CSOUND *csound, int32_t k, struct yyguts_t *yyg)
     n = atoi(s);
     while (i<=n-k && i< 0x4000000) i <<= 1;
     ans = new_token(csound, INTEGER_TOKEN);
-    sprintf(buf, "%d", i+k);
+    snprintf(buf, 16, "%d", i+k);
     len = (int32_t) strlen(buf);
     ans->lexeme = (char*)csound->Calloc(csound, len + 1);
     strNcpy(ans->lexeme, buf, len+1);

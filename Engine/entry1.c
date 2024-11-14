@@ -134,8 +134,8 @@ OENTRY opcodlst_1[] = {
   { "midglobal",S(MIDGLOBAL),0,   "",     "Sm", midglobal, NULL, NULL, NULL},
   { "ihold",  S(LINK),0,          "",     "",     ihold, NULL, NULL, NULL  },
   { "turnoff",S(LINK),0,           "",     "",     NULL,   turnoff, NULL, NULL },
+  { "S", S(IREF_NUM) ,0,  "S", ":InstrDef;", (SUBR) get_instr_name},
   /* VL: 10.2.22 this was thread  but with parser3 we need to make string assignment on threads 1 & 2 */
-  { "=.instrS", S(IREF_NUM) ,0,  "S", ":InstrDef;", (SUBR) get_instr_name},
   {  "=.S",   S(STRCPY_OP),0,     "S",    "S",
      (SUBR) strcpy_opcode_S, (SUBR) strassign_k, (SUBR) NULL, NULL    },
   /* VL: 11.2.22 this was thread   but with an update count, we need to be initialised */
@@ -144,7 +144,6 @@ OENTRY opcodlst_1[] = {
   {  "=.T",   S(STRCPY_OP),0,     "S",    "i",
      (SUBR) strcpy_opcode_p, (SUBR) NULL, (SUBR) NULL, NULL                 },
   { "=.r",    S(ASSIGN),0,        "r",    "i",    rassign, NULL, NULL, NULL },
-  { "=.instri", S(IREF_INIT) ,0,  ":InstrDef;", "i", (SUBR) init_instr_ref},
   { "=.Ci",    S(R2CXOP),0,        ":Complex;",    "iio", (SUBR) complex_assign},
   { "=.C",    S(CXOP),0,        ":Complex;",    ":Complex;", (SUBR) complex_init,
                                                                 (SUBR) complex_init},
@@ -1348,9 +1347,6 @@ OENTRY opcodlst_1[] = {
   { "createinstr",  S(CINSTR), 0,  ":InstrDef;", "S",  (SUBR) compile_instr, NULL, NULL },
   { "deleteinstr",  S(DELETEIN), 0, "", ":InstrDef;",  NULL, (SUBR) delete_instr, NULL },
   { "remove",  S(DELETEIN), 0, "", ":InstrDef;",  (SUBR) delete_instr, NULL },
-  { "lambda",  S(CARINSTR), 0,  "", "Sm",  (SUBR) compile_and_run_instr, NULL, NULL },
-  { "lambda",  S(RINSTR), 0,  "", ":InstrDef;m",  (SUBR) run_instr, NULL, NULL },
-  { "lambda",  S(RINSTRK), 0,  "", "k:InstrDef;m",  NULL, (SUBR) run_instr_k, NULL},
   { "evalstr",  S(COMPILE), 0,  "i", "S",  (SUBR) eval_str_i, NULL, NULL },
   { "evalstr",  S(COMPILE), 0,   "k", "Sk",  NULL, (SUBR) eval_str_k, NULL },
   { "readscore",  S(COMPILE), 0,  "i", "S",  (SUBR) read_score_i, NULL, NULL },

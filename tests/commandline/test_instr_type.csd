@@ -9,8 +9,8 @@ if nstrnum(g) != nstrnum(h) then
   prints "assert error for instrument number\n"
   exitnow(-1)
 endif
-S1 = g
-S2 = h
+S1 = S(g)
+S2 = S(h)
 if strcmp(S1,S2) != 0 then
   prints "assert error for instrument name\n"
   exitnow(-1)

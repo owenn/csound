@@ -1063,9 +1063,6 @@ static const CSOUND cenviron_ = {
   NULL,           /* multiThreadedDag */
   NULL,           /* barrier1 */
   NULL,           /* barrier2 */
-  NULL,           /* pointer1 was global_var_lock_root */
-  NULL,           /* pointer2 was global_var_lock_cache */
-  0,              /* int1 was global_var_lock_count */
   /* statics from cs_par_orc_semantic_analysis */
   NULL,           /* instCurr */
   NULL,           /* instRoot */

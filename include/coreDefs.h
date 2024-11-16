@@ -150,6 +150,9 @@ static const uint32_t PHMASK = (1 << 24) - 1;
 #define MIDIINBUFMAX    (1024)
 #define MIDIINBUFMSK    (MIDIINBUFMAX-1)
 #define MIDIMAXPORTS    (64)
+
+#define NAMELEN 40              /* array size of repeat macro names */
+#define RPTDEPTH 40             /* size of repeat_n arrays (39 loop levels) */  
   
   typedef int32_t (*SUBR)(CSOUND *, void *); 
   enum {FFT_LIB=0, PFFT_LIB, VDSP_LIB};

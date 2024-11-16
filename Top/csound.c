@@ -667,7 +667,8 @@ static const CSOUND cenviron_ = {
   midi_dev_list_dummy,
   csoundDoCallback_,  /*  doCsoundCallback    */
   defaultCsoundYield, /* csoundInternalYieldCallback_*/
-  /* end of callbacks */
+  kperf_nodebug,  /* current kperf function - nodebug by default */
+  (void (*)(CSOUND *csound, int32_t attr, const char *str)) NULL,/* message string callback */
   (void (*)(CSOUND *)) NULL,                      /*  spinrecv    */
   (void (*)(CSOUND *)) NULL,                      /*  spoutran    */
   (int32_t (*)(CSOUND *, MYFLT *, int32_t)) NULL,         /*  audrecv     */
@@ -1097,7 +1098,6 @@ static const CSOUND cenviron_ = {
   0,              /* modules loaded */
   -1,             /* audio system sr */
   0,              /* csdebug_data */
-  kperf_nodebug,  /* current kperf function - nodebug by default */
   0,              /* which score parser */
   0,              /* print_version */
   1,              /* inZero */
@@ -1113,7 +1113,6 @@ static const CSOUND cenviron_ = {
   0,              /* alloc_queue_wp */
   SPINLOCK_INIT,  /* alloc_spinlock */
   NULL,           /* init_event */
-  NULL,           /* message string callback */
   NULL,           /* message_string */
   0,              /* message_string_queue_items */
   0,              /* message_string_queue_wp */

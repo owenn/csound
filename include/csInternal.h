@@ -235,7 +235,89 @@ extern "C" {
     char str[MAX_MESSAGE_STR];
   } message_string_queue_t;
 
-  
+   struct sread__ {
+      SRTBLK  *bp, *prvibp;           /* current srtblk,  prev w/same int(p1) */
+      char    *sp, *nxp;              /* string pntrs into srtblk text        */
+      int32_t  op;                     /* opcode of current event              */
+      int32_t  warpin;                 /* input format sensor                  */
+      int32_t  linpos;                 /* line position sensor                 */
+      int32_t  lincnt;                 /* count of lines/section in scorefile  */
+      MYFLT   prvp2 /* = -FL(1.0) */;     /* Last event time                  */
+      MYFLT   clock_base /* = FL(0.0) */;
+      MYFLT   warp_factor /* = FL(1.0) */;
+      char    *curmem;
+      char    *memend;                /* end of cur memblk                    */
+      MACRO   *unused_ptr2;
+      int32_t  last_name /* = -1 */;
+      IN_STACK *inputs, *str;
+      int32_t  input_size, input_cnt;
+      int32_t  unused_int3;
+      int32_t  unused_int2;
+      int32_t  linepos /* = -1 */;
+      MARKED_SECTIONS names[30];
+      char    unused_char0[RPTDEPTH][NAMELEN];
+      int32_t unused_int4[RPTDEPTH];
+      int32   unused_int7[RPTDEPTH];
+      int32_t  unused_int5;
+      MACRO   *unused_ptr0[RPTDEPTH];
+      int32_t  unused_int6;
+      /* Variable for repeat sections */
+      char    unused_char1[NAMELEN];
+      int32_t unused_int8;
+      int32   unused_int9;
+      int32_t unused_intA;
+      MACRO   *unused_ptr1;
+      int32_t  nocarry;
+   };
+
+   struct onefileStatics__ {
+      NAMELST *toremove;
+      char    *orcname;
+      char    *sconame;
+      char    *midname;
+      int32_t     midiSet;
+      int32_t     csdlinecount;
+   };
+
+   struct lineventStatics__ {
+      char    *Linep, *Linebufend;
+      int32_t     stdmode;
+      EVTBLK  prve;
+      char    *Linebuf;
+      int32_t     linebufsiz;
+      char *orchestra, *orchestrab;
+      int32_t   oflag;
+   };
+
+   struct musmonStatics__ {
+      int32   srngcnt[MAXCHNLS], orngcnt[MAXCHNLS];
+      int16   srngflg;
+      int16   sectno;
+      int32_t     lplayed;
+      int32_t     segamps, sormsg;
+      EVENT   **ep, **epend;      /* pointers for stepping through lplay list */
+      EVENT   *lsect;
+   };
+
+   struct libsndStatics__ {
+      void       *outfile;
+      void       *infile;
+      char       *sfoutname;           /* soundout filename            */
+      MYFLT      *inbuf;
+      MYFLT      *outbuf;              /* contin sndio buffers         */
+      MYFLT      *outbufp;             /* MYFLT pntr                   */
+      uint32     inbufrem;
+      uint32     outbufrem;            /* in monosamps                 */
+                                          /* (see openin, iotranset)      */
+      uint32_t inbufsiz,  outbufsiz; /* alloc in sfopenin/out        */
+      int32_t isfopen;              /* (real set in sfopenin)       */
+      int32_t osfopen;              /* (real set in sfopenout)      */
+      int32_t pipdevin, pipdevout;  /* 0: file, 1: pipe, 2: rtaudio */
+      uint32  nframes               /* = 1UL */;
+      FILE    *pin, *pout;
+      int32_t dither;
+   };
+   
 
 #endif  /* __BUILDING_LIBCSOUND */
   

@@ -51,7 +51,6 @@
 #include "csound_compiler.h"
 #include "csound_misc.h"
 #include "csound_server.h"
-#include "csound_rtaudio.h"
 #include "cscore.h"
 #include "csound_data_structures.h"
 #include "pools.h"
@@ -1401,6 +1400,10 @@ extern "C" {
     int32_t       (*midi_dev_list_callback)(CSOUND *, CS_MIDIDEVICE *, int32_t);
     int32_t       (*doCsoundCallback)(CSOUND *, void *, uint32_t);
     int32_t       (*csoundInternalYieldCallback_)(CSOUND *);
+    int32_t       (*kperf)(CSOUND *); /* kperf function pointer, to switch between debug
+                                   and nodebug function */
+   void (*csoundMessageStringCallback)(CSOUND *csound, int32_t attr,
+                                        const char *str);
     void          (*spinrecv)(CSOUND *);
     void          (*spoutran)(CSOUND *);
     int32_t       (*audrecv)(CSOUND *, MYFLT *, int32_t);
@@ -1532,85 +1535,11 @@ extern "C" {
     spin_lock_t   memlock, spinlock1;
     char          *delayederrormessages;
     void          *printerrormessagesflag;
-    struct sread__ {
-      SRTBLK  *bp, *prvibp;           /* current srtblk,  prev w/same int(p1) */
-      char    *sp, *nxp;              /* string pntrs into srtblk text        */
-      int32_t  op;                     /* opcode of current event              */
-      int32_t  warpin;                 /* input format sensor                  */
-      int32_t  linpos;                 /* line position sensor                 */
-      int32_t  lincnt;                 /* count of lines/section in scorefile  */
-      MYFLT   prvp2 /* = -FL(1.0) */;     /* Last event time                  */
-      MYFLT   clock_base /* = FL(0.0) */;
-      MYFLT   warp_factor /* = FL(1.0) */;
-      char    *curmem;
-      char    *memend;                /* end of cur memblk                    */
-      MACRO   *unused_ptr2;
-      int32_t  last_name /* = -1 */;
-      IN_STACK *inputs, *str;
-      int32_t  input_size, input_cnt;
-      int32_t  unused_int3;
-      int32_t  unused_int2;
-      int32_t  linepos /* = -1 */;
-      MARKED_SECTIONS names[30];
-      char    unused_char0[RPTDEPTH][NAMELEN];
-      int32_t unused_int4[RPTDEPTH];
-      int32   unused_int7[RPTDEPTH];
-      int32_t  unused_int5;
-      MACRO   *unused_ptr0[RPTDEPTH];
-      int32_t  unused_int6;
-      /* Variable for repeat sections */
-      char    unused_char1[NAMELEN];
-      int32_t unused_int8;
-      int32   unused_int9;
-      int32_t unused_intA;
-      MACRO   *unused_ptr1;
-      int32_t  nocarry;
-    } sread;
-    struct onefileStatics__ {
-      NAMELST *toremove;
-      char    *orcname;
-      char    *sconame;
-      char    *midname;
-      int32_t     midiSet;
-      int32_t     csdlinecount;
-    } onefileStatics;
-#define LBUFSIZ   32768
-    struct lineventStatics__ {
-      char    *Linep, *Linebufend;
-      int32_t     stdmode;
-      EVTBLK  prve;
-      char    *Linebuf;
-      int32_t     linebufsiz;
-      char *orchestra, *orchestrab;
-      int32_t   oflag;
-    } lineventStatics;
-    struct musmonStatics__ {
-      int32   srngcnt[MAXCHNLS], orngcnt[MAXCHNLS];
-      int16   srngflg;
-      int16   sectno;
-      int32_t     lplayed;
-      int32_t     segamps, sormsg;
-      EVENT   **ep, **epend;      /* pointers for stepping through lplay list */
-      EVENT   *lsect;
-    } musmonStatics;
-    struct libsndStatics__ {
-      void       *outfile;
-      void       *infile;
-      char       *sfoutname;           /* soundout filename            */
-      MYFLT      *inbuf;
-      MYFLT      *outbuf;              /* contin sndio buffers         */
-      MYFLT      *outbufp;             /* MYFLT pntr                   */
-      uint32     inbufrem;
-      uint32     outbufrem;            /* in monosamps                 */
-                                          /* (see openin, iotranset)      */
-      uint32_t inbufsiz,  outbufsiz; /* alloc in sfopenin/out        */
-      int32_t isfopen;              /* (real set in sfopenin)       */
-      int32_t osfopen;              /* (real set in sfopenout)      */
-      int32_t pipdevin, pipdevout;  /* 0: file, 1: pipe, 2: rtaudio */
-      uint32  nframes               /* = 1UL */;
-      FILE    *pin, *pout;
-      int32_t dither;
-    } libsndStatics;
+    struct sread__ sread;
+    struct onefileStatics__ onefileStatics;
+    struct lineventStatics__ lineventStatics;
+    struct musmonStatics__ musmonStatics;
+    struct libsndStatics__ libsndStatics;
     int32_t       warped;               /* rdscor.c */
     int32_t       sstrlen;
     char          *sstrbuf;
@@ -1635,9 +1564,9 @@ extern "C" {
     void          *pvFileTable;         /* pvfileio.c */
     int32_t        pvNumFiles;
     int32_t        pvErrorCode;
-    int32_t           enableHostImplementedAudioIO;
-    int32_t           enableHostImplementedMIDIIO;
-    int32_t           hostRequestedBufferSize;
+    int32_t        enableHostImplementedAudioIO;
+    int32_t        enableHostImplementedMIDIIO;
+    int32_t        hostRequestedBufferSize;
     /* engineStatus is sum of:
      *   1 (CS_STATE_PRE):  csoundPreCompile was called
      *   2 (CS_STATE_COMP): csoundCompile was called
@@ -1722,8 +1651,7 @@ extern "C" {
     int32_t           modules_loaded;
     MYFLT         _system_sr;
     void*         csdebug_data; /* debugger data */
-    int32_t (*kperf)(CSOUND *); /* kperf function pointer, to switch between debug
-                                   and nodebug function */
+
     int32_t           score_parser;
     int32_t           print_version;
     int32_t           inZero;       /* flag compilation of instr0 */
@@ -1739,9 +1667,6 @@ extern "C" {
     unsigned long alloc_queue_wp;
     spin_lock_t alloc_spinlock;
     EVTBLK *init_event;
-    void (*csoundMessageStringCallback)(CSOUND *csound,
-                                        int32_t attr,
-                                        const char *str);
     char* message_string;
     volatile unsigned long message_string_queue_items;
     unsigned long message_string_queue_wp;

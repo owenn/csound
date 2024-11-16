@@ -1,5 +1,5 @@
 /*
-  csound_rtaudio: realtime audio module functions
+  csound_rtaudio.h: realtime audio module functions
 
   Copyright (C) 1991-2024 
 
@@ -27,6 +27,10 @@
 extern "C" {
 #endif /*  __cplusplus */
 
+  /** @defgroup AUDIOIO Audio I/O
+   *
+   *  @{ */
+  
   /**
    * Real-time audio parameters structure
    */
@@ -55,14 +59,29 @@ extern "C" {
   typedef int32_t (*audioDevListFunc)(CSOUND *,
                                       CS_AUDIODEVICE *, int32_t);
 
-  void **csoundGetRtRecordUserData(CSOUND *);
-  void **csoundGetRtPlayUserData(CSOUND *);
-  void csoundSetPlayopenCallback(CSOUND *, devOpenFunc);
-  void csoundSetRtplayCallback(CSOUND *, audioOutFunc);
-  void csoundSetRecopenCallback(CSOUND *, devOpenFunc);
-  void csoundSetRtrecordCallback(CSOUND *, audioInFunc);
-  void csoundSetRtcloseCallback(CSOUND *, void (*)(CSOUND *));
-  void csoundSetAudioDeviceListCallback(CSOUND *csound, audioDevListFunc);
+  PUBLIC void **csoundGetRtRecordUserData(CSOUND *);
+  PUBLIC void **csoundGetRtPlayUserData(CSOUND *);
+  PUBLIC void csoundSetPlayopenCallback(CSOUND *, devOpenFunc);
+  PUBLIC void csoundSetRtplayCallback(CSOUND *, audioOutFunc);
+  PUBLIC void csoundSetRecopenCallback(CSOUND *, devOpenFunc);
+  PUBLIC void csoundSetRtrecordCallback(CSOUND *, audioInFunc);
+  PUBLIC void csoundSetRtcloseCallback(CSOUND *, void (*)(CSOUND *));
+  PUBLIC void csoundSetAudioDeviceListCallback(CSOUND *csound, audioDevListFunc);
+
+  /**
+   * Calling this function after csoundCreate()
+   * and before the start of performance will disable all default
+   * handling of sound I/O by the Csound library via its audio backend module.
+   * Host application should in this case use the spin/spout buffers directly.
+   */
+  PUBLIC void csoundSetHostAudioIO(CSOUND *);
+
+  /**
+   *  Sets the current RT audio module
+   */
+  PUBLIC void csoundSetRTAudioModule(CSOUND *csound, const char *module);
+
+  /** @}*/
 
   
 #ifdef __cplusplus

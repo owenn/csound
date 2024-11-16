@@ -21,7 +21,7 @@ version are planned.
 <!--- ![Coverity Status](https://scan.coverity.com/projects/1822/badge.svg) --->
 A sound and music computing system.
 
-Csound is copyright (c) 1991-2020 The Csound Developers, see CONTRIBUTORS
+Csound is copyright (c) 1991-2024 The Csound Developers, see CONTRIBUTORS
 
 Csound is free software; you can redistribute them
 and/or modify them under the terms of the GNU Lesser General Public

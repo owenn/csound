@@ -636,9 +636,12 @@ static const CSOUND cenviron_ = {
   cs_strtod,
   cs_sprintf,
   cs_sscanf,
+  /* space for API expansion */
   {
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    NULL, NULL, NULL
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
   },
   /* ------- private data (not to be used by hosts or externals) ------- */
   /* callback function pointers */

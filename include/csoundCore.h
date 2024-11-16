@@ -1,7 +1,7 @@
 /*
   csoundCore.h: csound engine structures and module API
 
-  Copyright (C) 1991-2024 Barry Vercoe, John ffitch, Istvan Varga,              
+  Copyright (C) 1991-2024 Barry Vercoe, John ffitch, Istvan Varga,      
                            V Lazzarini, S Yi
 
   This file is part of Csound.
@@ -51,277 +51,16 @@
 #include "csound_compiler.h"
 #include "csound_misc.h"
 #include "csound_server.h"
+#include "csound_rtaudio.h"
 #include "cscore.h"
 #include "csound_data_structures.h"
 #include "pools.h"
 #include "soundfile.h"
-
-#ifndef __cplusplus
-#include <stdbool.h>
-#endif
-
-#ifndef CSOUND_CSDL_H
-/* VL not sure if we need to check for SSE */
-#if defined(__SSE__) && !defined(EMSCRIPTEN)
-#include <xmmintrin.h>
-#ifndef _MM_DENORMALS_ZERO_ON
-#define _MM_DENORMALS_ZERO_MASK   0x0040
-#define _MM_DENORMALS_ZERO_ON     0x0040
-#define _MM_DENORMALS_ZERO_OFF    0x0000
-#define _MM_SET_DENORMALS_ZERO_MODE(mode)                               \
-  _mm_setcsr((_mm_getcsr() & ~_MM_DENORMALS_ZERO_MASK) | (mode))
-#define _MM_GET_DENORMALS_ZERO_MODE()           \
-  (_mm_getcsr() & _MM_DENORMALS_ZERO_MASK)
-#endif
-#else
-#ifndef _MM_DENORMALS_ZERO_ON
-#define _MM_DENORMALS_ZERO_MASK   0
-#define _MM_DENORMALS_ZERO_ON     0
-#define _MM_DENORMALS_ZERO_OFF    0
-#define _MM_SET_DENORMALS_ZERO_MODE(mode)
-#endif
-#endif
-#endif
+#include "coreDefs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif /*  __cplusplus */
-
-
-  /* VL: these were moved here from csound.h
-     as they are not relevant to the new host API
-  */
-  typedef struct xyindat_ XYINDAT;
-
-  /**
-   * Real-time audio parameters structure
-   */
-  typedef struct {
-    /** device name (NULL/empty: default) */
-    char    *devName;
-    /** device number (0-1023), 1024: default */
-    int32_t     devNum;
-    /** buffer fragment size (-b) in sample frames */
-    uint32_t     bufSamp_SW;
-    /** total buffer size (-B) in sample frames */
-    int32_t     bufSamp_HW;
-    /** number of channels */
-    int32_t     nChannels;
-    /** sample format (AE_SHORT etc.) */
-    int32_t     sampleFormat;
-    /** sample rate in Hz */
-    float   sampleRate;
-    /** ksmps */
-    int32_t ksmps;
-  } csRtAudioParams;
-
-  uint32_t csoundGetNchnls(CSOUND *);
-  uint32_t csoundGetNchnlsInput(CSOUND *csound);
-  long csoundGetInputBufferSize(CSOUND *);
-  long csoundGetOutputBufferSize(CSOUND *);
-  void *csoundGetNamedGens(CSOUND *);
-  int32_t *csoundGetChannelLock(CSOUND *csound, const char *name);
-
-  void **csoundGetRtRecordUserData(CSOUND *);
-  void **csoundGetRtPlayUserData(CSOUND *);
-
-  void
-  csoundSetPlayopenCallback(CSOUND *,
-                            int32_t (*playopen__)(CSOUND *,
-                                              const csRtAudioParams *parm));
-  void csoundSetRtplayCallback(CSOUND *,
-                               void (*rtplay__)(CSOUND *,
-                                                const MYFLT *outBuf,
-                                                int32_t nbytes));
-  void csoundSetRecopenCallback(CSOUND *,
-                                int32_t (*recopen_)(CSOUND *,
-                                                const csRtAudioParams *parm));
-  void csoundSetRtrecordCallback(CSOUND *,
-                                 int32_t (*rtrecord__)(CSOUND *,
-                                                   MYFLT *inBuf,
-                                                   int32_t nbytes));
-  void csoundSetRtcloseCallback(CSOUND *, void (*rtclose__)(CSOUND *));
-  void csoundSetAudioDeviceListCallback(CSOUND *csound,
-                                        int32_t (*audiodevlist__)(CSOUND *,
-                                                              CS_AUDIODEVICE *list,
-                                                              int32_t isOutput));
-
-  int32_t csoundCompileCsd(CSOUND *csound, const char *csd_filename);
-  int32_t csoundCompileCsdText(CSOUND *csound, const char *csd_text);
-  int32_t csoundCleanup(CSOUND *);
-
-  void csoundInputMessage(CSOUND *csound, const char * sc);
-  int32_t csoundScoreEvent(CSOUND *, char type, const MYFLT *pFields,
-                        long numFields);
-
-#if defined(__MACH__) || defined(__FreeBSD__) || defined(__DragonFly__)
-#include <xlocale.h>
-#endif
-
-#if (defined(__MACH__) || defined(ANDROID) || defined(NACL) \
-  || defined(__CYGWIN__) || defined(__HAIKU__))
-#include <pthread.h>
-#define BARRIER_SERIAL_THREAD (-1)
-  typedef struct {
-    pthread_mutex_t mut;
-    pthread_cond_t cond;
-    uint32_t count, max, iteration;
-  } barrier_t;
-
-#ifndef PTHREAD_BARRIER_SERIAL_THREAD
-#define pthread_barrier_t barrier_t
-#endif /* PTHREAD_BARRIER_SERIAL_THREAd */
-#endif /* __MACH__ */
-
-#define OK        (0)
-#define NOTOK     (-1)
-
-#define DEFAULT_STRING_SIZE 64
-
-#define CSFILE_FD_R     1
-#define CSFILE_FD_W     2
-#define CSFILE_STD      3
-#define CSFILE_SND_R    4
-#define CSFILE_SND_W    5
-
-  /* check for power of two ftable sizes */
-#define IS_POW_TWO(N) ((N != 0) ? !(N & (N - 1)) : 0)
-
-#define MAXINSNO  (200)
-#define PMAX      (1998)
-#define VARGMAX   (1999)
-#define NOT_AN_INSTRUMENT INT32_MAX
-
-#define ORTXT       h.optext->t
-#define INCOUNT     ORTXT.inlist->count
-#define OUTCOUNT    ORTXT.outlist->count   /* Not used */
-#define INOCOUNT    ORTXT.inArgCount
-#define OUTOCOUNT   ORTXT.outArgCount
-#define IS_ASIG_ARG(x) (GetTypeForArg(x) == csound->GetType(csound, "a"))
-#define IS_STR_ARG(x) (GetTypeForArg(x) == csound->GetType(csound, "S"))
-#define IS_KSIG_ARG(x) (GetTypeForArg(x) == csound->GetType(csound, "k"))
-#define IS_INIT_ARG(x) (GetTypeForArg(x) == csound->GetType(csound, "i"))
-#define IS_FSIG_ARG(x) (GetTypeForArg(x) == csound->GetType(csound, "f"))
-#define IS_ARRAY_ARG(x) (GetTypeForArg(x) == csound->GetType(csound, "["))
-
-#define CURTIME (((double)csound->icurTime)/((double)csound->esr))
-#define CURTIME_inc (((double)csound->ksmps)/((double)csound->esr))
-
-#ifndef  SHORT_TABLE_LENGTH  // long max table length is the default
-// MAXLEN is the largest positive 32bit signed pow of two  
-static const int32_t MAXLEN = 1 << 30;
-static const double FMAXLEN = (double) (1 << 30);
-static const uint32_t PHMASK = (1 << 30) - 1;
-#else   // this is the original max table length
-static const int32_t MAXLEN =  1 << 24;
-static const double FMAXLEN = (double) (1 << 24);
-static const uint32_t PHMASK = (1 << 24) - 1;
-#endif
-
-
-#define MAX_STRING_CHANNEL_DATASIZE 16384
-
-#define PFRAC(x)   ((MYFLT)((x) & ftp->lomask) * ftp->lodiv)
-#define MAXPOS     0x7FFFFFFFL
-
-#define BYTREVS(n) ((n>>8  & 0xFF) | (n<<8 & 0xFF00))
-#define BYTREVL(n) ((n>>24 & 0xFF) | (n>>8 & 0xFF00L) |         \
-                    (n<<8 & 0xFF0000L) | (n<<24 & 0xFF000000L))
-
-#define OCTRES     8192
-#define CPSOCTL(n) ((MYFLT)(1<<((int32_t)(n)>>13))*csound->cpsocfrc[(int32_t)(n)&8191])
-
-#ifdef USE_DOUBLE
-  extern int64_t MYNAN;
-#define SSTRCOD    (double)NAN
-#else
-  extern int32 MYNAN;
-#define SSTRCOD    (float)NAN
-#endif
-  extern int32_t ISSTRCOD(MYFLT);
-
-#define SSTRSIZ    1024
-#define ALLCHNLS   0x7fff
-#define DFLT_SR    FL(44100.0)
-#define DFLT_KR    FL(4410.0)
-#define DFLT_KSMPS 10
-#define DFLT_NCHNLS 1
-#define MAXCHNLS   256
-
-#define MAXNAME   (256)
-
-#define DFLT_DBFS (FL(32768.0))
-
-#define MAXOCTS         8
-#define MAXCHAN         16      /* 16 MIDI channels; only one port for now */
-
-  /* A440 tuning factor */
-#define ONEPT           (csound->GetA4(csound)/430.5389646099018460319362438314060262605)
-#define LOG10D20        0.11512925              /* for db to ampfac   */
-#define DV32768         FL(0.000030517578125)
-
-#ifndef PI
-#define PI      (3.141592653589793238462643383279502884197)
-#endif /* pi */
-#define TWOPI   (6.283185307179586476925286766559005768394)
-#define HALFPI  (1.570796326794896619231321691639751442099)
-#define PI_F    ((MYFLT) PI)
-#define TWOPI_F ((MYFLT) TWOPI)
-#define HALFPI_F ((MYFLT) HALFPI)
-#define INF     (2147483647.0)
-#define ROOT2   (1.414213562373095048801688724209698078569)
-
-  /* CONSTANTS FOR USE IN MSGLEVEL */
-#define CS_AMPLMSG 01
-#define CS_RNGEMSG 02
-#define CS_WARNMSG 04
-#define CS_NOMSG   0x10
-#define CS_RAWMSG  0x40
-#define CS_TIMEMSG 0x80
-#define CS_NOQQ    0x400
-
-#define IGN(X)  (void) X
-
-#define ARG_CONSTANT 0
-#define ARG_STRING 1
-#define ARG_PFIELD 2
-#define ARG_GLOBAL 3
-#define ARG_LOCAL 4
-#define ARG_LABEL 5
-
-#define ASYNC_GLOBAL 1
-#define ASYNC_LOCAL  2
-
-  enum {FFT_LIB=0, PFFT_LIB, VDSP_LIB};
-  enum {FFT_FWD=0, FFT_INV};
-
-  /* advance declaration for
-     API  message queue struct
-  */
-  struct _message_queue;
-
-  typedef struct CSFILE_ {
-    struct CSFILE_  *nxt;
-    struct CSFILE_  *prv;
-    int32_t             type;
-    int32_t             fd;
-    FILE            *f;
-    SNDFILE         *sf;
-    void            *cb;
-    int32_t             async_flag;
-    int32_t             items;
-    int32_t             pos;
-    MYFLT           *buf;
-    int32_t             bufsize;
-    char            fullName[1];
-  } CSFILE;
-
-
-  typedef struct CORFIL {
-    char    *body;
-    uint32_t     len;
-    uint32_t     p;
-  } CORFIL;
 
   typedef struct arglst {
     int32_t count;
@@ -362,10 +101,8 @@ static const uint32_t PHMASK = (1 << 24) - 1;
     uint32_t        inArgCount;
     ARG             *outArgs;
     uint32_t       outArgCount;
-    //    char            intype;         /* Type of first input argument (g,k,a,w etc) */
     char            pftype;         /* Type of output argument (k,a etc) */
   } TEXT;
-
 
   /**
    * This struct is filled out by otran() at orch parse time.
@@ -373,41 +110,36 @@ static const uint32_t PHMASK = (1 << 24) - 1;
    */
   typedef struct instr {
     struct op * nxtop;              /* Linked list of instr opcodes */
-    TEXT    t;                      /* Text of instrument (same in nxtop) */
-    int32_t     pmax, vmax, pextrab;    /* Arg count, size of data for all
+    TEXT t;                         /* Text of instrument (same in nxtop) */
+    int32_t pmax, vmax, pextrab;    /* Arg count, size of data for all
                                        opcodes in instr */
-    //int     mdepends;               /* Opcode type (i/k/a) */
     CS_VAR_POOL* varPool;
-
-    //    int32_t     optxtcount;
-    int16   muted;
-    //    int32   localen;
-    int32   opdstot;                /* Total size of opds structs in instr */
-    //    int32   *inslist;               /* Only used in parsing (?) */
-    MYFLT   *psetdata;              /* Used for pset opcode */
-    struct insds * instance;        /* Chain of allocated instances of
+    int16  muted;
+    int32  opdstot;                /* Total size of opds structs in instr */
+    MYFLT  *psetdata;              /* Used for pset opcode */
+    struct insds *instance;        /* Chain of allocated instances of
                                        this instrument */
-    struct insds * lst_instance;    /* last allocated instance */
-    struct insds * act_instance;    /* Chain of free (inactive) instances */
+    struct insds *lst_instance;    /* last allocated instance */
+    struct insds *act_instance;    /* Chain of free (inactive) instances */
                                     /* (pointer to next one is INSDS.nxtact) */
-    struct instr * nxtinstxt;       /* Next instrument in orch (num order) */
-    int32_t     active;                 /* To count activations for control */
-    int32_t     pending_release;        /* To count instruments in release phase */
-    int32_t     maxalloc;
-    int32_t     turnoff_mode;       /* Optionally turnoff instruments instances above maxalloc*/
-    MYFLT   cpuload;                /* % load this instrumemnt makes */
+    struct instr *nxtinstxt;       /* Next instrument in orch (num order) */
+    int32_t active;                 /* To count activations for control */
+    int32_t pending_release;        /* To count instruments in release phase */
+    int32_t maxalloc;
+    int32_t turnoff_mode;       /* Optionally turnoff instruments instances above maxalloc*/
+    MYFLT cpuload;                /* % load this instrumemnt makes */
     struct opcodinfo *opcode_info;  /* UDO info (when instrs are UDOs) */
-    char    *insname;               /* instrument name */
-    int32_t     instcnt;                /* Count number of instances ever */
-    int32_t     isNew;                  /* is this a new definition */
-    int32_t     nocheckpcnt;            /* Control checks on pcnt */
+    char *insname;               /* instrument name */
+    int32_t instcnt;                /* Count number of instances ever */
+    int32_t isNew;                  /* is this a new definition */
+    int32_t nocheckpcnt;            /* Control checks on pcnt */
   } INSTRTXT;
 
   typedef struct namedInstr {
     int32        instno;
     char        *name;
     INSTRTXT    *ip;
-    struct namedInstr   *next;
+    struct namedInstr  *next;
   } INSTRNAME;
 
   /**
@@ -421,8 +153,7 @@ static const uint32_t PHMASK = (1 << 24) - 1;
 
   typedef struct fdch {
     struct fdch *nxtchp;
-    /** handle returned by csound->FileOpen() */
-    void    *fd;
+    void    *fd;  /* handle returned by csound->FileOpen() */ 
   } FDCH;
 
   typedef struct auxch {
@@ -467,7 +198,7 @@ static const uint32_t PHMASK = (1 << 24) - 1;
     size_t   allocated; /* size of allocated data */
   };
 
-#define MAX_STRINGDAT_SIZE 0xFFFFFFFF
+#define MAX_STRINGDAT_SIZE 0xFFFFFFFF  
   /*
    * Type definition for string data 
    */
@@ -537,9 +268,9 @@ static const uint32_t PHMASK = (1 << 24) - 1;
     int16   ksuscnt;
     /** current state of sustain pedal (0: off) */
     int16   sustaining;
-    int32_t     dpmsb;
-    int32_t     dplsb;
-    int32_t     datenabl;
+    int32_t dpmsb;
+    int32_t dplsb;
+    int32_t  datenabl;
     /** chain of dpgm keylists */
     DKLST   *klists;
     /** drumset params         */
@@ -642,9 +373,9 @@ static const uint32_t PHMASK = (1 << 24) - 1;
                               (used by opcodes) */
     MYFLT   *spin;         /* offset into csound->spin */
     MYFLT   *spout;        /* offset into csound->spout, or local spout */
-    int32_t      init_done;
-    int32_t      tieflag;
-    int32_t      reinitflag;
+    int32_t  init_done;
+    int32_t  tieflag;
+    int32_t  reinitflag;
     MYFLT    retval;
     MYFLT   *lclbas;  /* base for variable memory pool */
     char    *strarg;       /* string argument */
@@ -672,14 +403,14 @@ static const uint32_t PHMASK = (1 << 24) - 1;
 #define CS_PDS       (p->h.insdshead->pds)
 #define CS_SPIN      (p->h.insdshead->spin)
 #define CS_SPOUT     (p->h.insdshead->spout)
-
-/* Phase modulo-1 for oscillators */
-static inline double PHMOD1(double p) {
-    return p < 0 ? -(1. - FLOOR(p)) : p - (uint64_t) p;
-}
-
-  typedef int32_t (*SUBR)(CSOUND *, void *);
-
+#define ORTXT       h.optext->t
+#define INCOUNT     ORTXT.inlist->count
+#define OUTCOUNT    ORTXT.outlist->count   /* Not used */
+#define INOCOUNT    ORTXT.inArgCount
+#define OUTOCOUNT   ORTXT.outArgCount
+#define CURTIME (((double)csound->icurTime)/((double)csound->esr))
+#define CURTIME_inc (((double)csound->ksmps)/((double)csound->esr))  
+ 
   /**
    * This struct holds the info for one opcode in a concrete
    * instrument instance in performance.
@@ -868,230 +599,17 @@ static inline double PHMOD1(double p) {
     MYFLT       srate;
   } PVOCEX_MEMFILE;
 
-/* The definitions and declarations in this section 
-   are not available externally to plugins.
-*/
-#ifdef __BUILDING_LIBCSOUND
+#define IS_ASIG_ARG(x) (GetTypeForArg(x) == csound->GetType(csound, "a"))
+#define IS_STR_ARG(x) (GetTypeForArg(x) == csound->GetType(csound, "S"))
+#define IS_KSIG_ARG(x) (GetTypeForArg(x) == csound->GetType(csound, "k"))
+#define IS_INIT_ARG(x) (GetTypeForArg(x) == csound->GetType(csound, "i"))
+#define IS_FSIG_ARG(x) (GetTypeForArg(x) == csound->GetType(csound, "f"))
+#define IS_ARRAY_ARG(x) (GetTypeForArg(x) == csound->GetType(csound, "[")) 
 
-/* max number of input/output args for user defined opcodes */
-#define OPCODENUMOUTS_LOW   16
-#define OPCODENUMOUTS_HIGH  64
-#define OPCODENUMOUTS_MAX   256
-
-#define MBUFSIZ         (4096)
-#define MIDIINBUFMAX    (1024)
-#define MIDIINBUFMSK    (MIDIINBUFMAX-1)
-#define MIDIMAXPORTS    (64)
-
-  typedef union {
-    uint32 dwData;
-    unsigned char bData[4];
-  } MIDIMESSAGE;
-
-  /* MIDI globals */
-
-  typedef struct midiglobals {
-    MEVENT  *Midevtblk;
-    int32_t     sexp;
-    int32_t     MIDIoutDONE;
-    int32_t     MIDIINbufIndex;
-    MIDIMESSAGE MIDIINbuffer2[MIDIINBUFMAX];
-    int32_t     (*MidiInOpenCallback)(CSOUND *, void **, const char *);
-    int32_t     (*MidiReadCallback)(CSOUND *, void *, unsigned char *, int32_t);
-    int32_t     (*MidiInCloseCallback)(CSOUND *, void *);
-    int32_t     (*MidiOutOpenCallback)(CSOUND *, void **, const char *);
-    int32_t     (*MidiWriteCallback)(CSOUND *, void *, const unsigned char *, int32_t);
-    int32_t     (*MidiOutCloseCallback)(CSOUND *, void *);
-    const char *(*MidiErrorStringCallback)(int32_t);
-    void    *midiInUserData;
-    void    *midiOutUserData;
-    void    *midiFileData;
-    void    *midiOutFileData;
-    int32_t     rawControllerMode;
-    char    muteTrackList[256];
-    unsigned char mbuf[MBUFSIZ];
-    unsigned char *bufp, *endatp;
-    int16   datreq, datcnt;
-  } MGLOBAL;
-
-  typedef struct osc_mess {
-    char *address;
-    char *type;
-    char *data;
-    int32_t size;
-    int32_t flag;
-    struct osc_mess *nxt;
-  } OSC_MESS;
-
-  typedef struct eventnode {
-    struct eventnode  *nxt;
-    uint32     start_kcnt;
-    EVTBLK            evt;
-  } EVTNODE;
-
-  typedef struct {
-    OPDS    h;
-    MYFLT   *ktempo, *istartempo;
-    MYFLT   prvtempo;
-  } TEMPO;
-
-  typedef struct names {
-    char    *mac;
-    struct names *next;
-  } NAMES;
-
-  typedef struct threadInfo {
-    struct threadInfo *next;
-    void * threadId;
-  } THREADINFO;
-
-#include "sort.h"
-#include "text.h"
-#include "prototyp.h"
-#include "cwindow.h"
-#include "envvar.h"
-#include "remote.h"
-
-#define CS_STATE_PRE    (1)
-#define CS_STATE_COMP   (2)
-#define CS_STATE_UTIL   (4)
-#define CS_STATE_CLN    (8)
-#define CS_STATE_JMP    (16)
-
-  /* These are used to set/clear bits in csound->tempStatus.
-     If the bit is set, it indicates that the given file is
-     a temporary. */
-  extern const uint32_t csOrcMask;
-  extern const uint32_t csScoInMask;
-  extern const uint32_t csScoSortMask;
-  extern const uint32_t csMidiScoMask;
-  extern const uint32_t csPlayScoMask;
-
-  /* kperf function protoypes. Used by the debugger to switch between debug
-   * and nodebug kperf functions */
-  int32_t kperf_nodebug(CSOUND *csound);
-  int32_t kperf_debug(CSOUND *csound);
-
-#endif  /* __BUILDING_LIBCSOUND */
-
-#define MARGS   (3)
-#define MAX_INCLUDE_DEPTH 100
-  struct MACRO;
-
-  typedef struct MACRON {
-    int32_t             n;
-    uint32_t    line;
-    struct MACRO    *s;
-    char            *path;
-    int32_t             included;
-  } MACRON;
-
-  typedef struct MACRO {          /* To store active macros */
-    char          *name;        /* Use is by name */
-    int32_t           acnt;         /* Count of arguments */
-    char          *body;        /* The text of the macro */
-    struct MACRO  *next;        /* Chain of active macros */
-    int32_t           margs;        /* amount of space for args */
-    char          *arg[MARGS];  /* With these arguments */
-  } MACRO;
-
-  typedef struct in_stack_s {     /* Stack of active inputs */
-    int16       is_marked_repeat;     /* 1 if this input created by 'n' stmnt */
-    int16       args;                 /* Argument count for macro */
-    //CORFIL      *cf;                  /* In core file */
-    //void        *fd;                  /* for closing stream */
-    MACRO       *mac;
-    int32_t         line;
-    int32       oposit;
-  } IN_STACK;
-
-  typedef struct marked_sections {
-    char        *name;
-    int32       posit;
-    int32_t         line;
-  } MARKED_SECTIONS;
-
-  typedef struct namelst {
-    char           *name;
-    struct namelst *next;
-  } NAMELST;
-
-  typedef struct NAME__ {
-    char          *namep;
-    struct NAME__  *nxt;
-    int32_t           type, count;
-  } NAME;
-
-  /* Holds UDO information, when an instrument is
-     defined as a UDO
-  */
-  typedef struct opcodinfo {
-    int32    instno;
-    char    *name, *intypes, *outtypes;
-    int16   inchns, outchns;
-    bool newStyle;
-    bool passByRef;
-    CS_VAR_POOL* out_arg_pool;
-    CS_VAR_POOL* in_arg_pool;
-    INSTRTXT *ip;
-    struct opcodinfo *prv;
-  } OPCODINFO;
-
-  /**
-   * This struct will hold the current engine state after compilation
-   */
-  typedef struct engine_state {
-    CS_VAR_POOL    *varPool;  /* global variable pool */
-    CS_HASH_TABLE  *constantsPool;
-    CS_HASH_TABLE  *stringPool;
-    int32_t            maxopcno;
-    INSTRTXT      **instrtxtp; /* instrument list      */
-    INSTRTXT      instxtanchor;
-    CS_HASH_TABLE *instrumentNames; /* instrument names */
-    int32_t           maxinsno;
-  } ENGINE_STATE;
-
-
-  /**
-   * Nen FFT interface
-   */
-  typedef struct _FFT_SETUP{
-    int32_t N, M;
-    void  *setup;
-    MYFLT *buffer;
-    int32_t    lib;
-    int32_t    d;
-    int32_t  p2;
-  } CSOUND_FFT_SETUP;
-
-
-  /**
-   * plugin module info
-   */
-  typedef struct {
-    char module[12];
-    char type[12];
-  } MODULE_INFO;
-
-
-#define MAX_ALLOC_QUEUE 1024
-
-  typedef struct _alloc_data_ {
-    int32_t type;
-    int32_t insno;
-    EVTBLK blk;
-    MCHNBLK *chn;
-    MEVENT mep;
-    INSDS *ip;
-    OPDS *ids;
-  } ALLOC_DATA;
-
-#define MAX_MESSAGE_STR 1024
-  typedef struct _message_queue_t_ {
-    int32_t attr;
-    char str[MAX_MESSAGE_STR];
-  } message_string_queue_t;
-
+/* Phase modulo-1 for oscillators */
+static inline double PHMOD1(double p) {
+    return p < 0 ? -(1. - FLOOR(p)) : p - (uint64_t) p;
+}
   /* Binary positive power function */
   static inline double intpow1(double x, int32_t n)
   {
@@ -1347,6 +865,7 @@ static inline double PHMOD1(double p) {
 
   
 
+#include "csInternal.h"  
 #include "find_opcode.h"
 
   /**

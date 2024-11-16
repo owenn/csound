@@ -29,8 +29,19 @@
 #include "csPerfThread.hpp"
 #include "soundfile.h"
 #include "soundio.h"
-
 #include "csoundCore.h"
+
+extern "C" {
+  uint32_t csoundGetNchnls(CSOUND *);
+  uint32_t csoundGetNchnlsInput(CSOUND *csound);
+  long csoundGetInputBufferSize(CSOUND *);
+  long csoundGetOutputBufferSize(CSOUND *);
+  int32_t csoundCleanup(CSOUND *);
+  void csoundInputMessage(CSOUND *csound, const char * sc);
+  int32_t csoundScoreEvent(CSOUND *, char type, const MYFLT *pFields,
+                        long numFields);
+}
+
 class CsoundThreadLock {
 protected:
   void  *threadLock;

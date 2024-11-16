@@ -73,6 +73,20 @@
 #include "csdebug.h"
 #include <time.h>
 
+  int32_t kperf_nodebug(CSOUND *csound);
+  uint32_t csoundGetNchnls(CSOUND *);
+  uint32_t csoundGetNchnlsInput(CSOUND *csound);
+  long csoundGetInputBufferSize(CSOUND *);
+  long csoundGetOutputBufferSize(CSOUND *);
+  void *csoundGetNamedGens(CSOUND *);
+  int32_t *csoundGetChannelLock(CSOUND *csound, const char *name);
+  int32_t csoundCompileCsd(CSOUND *csound, const char *csd_filename);
+  int32_t csoundCompileCsdText(CSOUND *csound, const char *csd_text);
+  int32_t csoundCleanup(CSOUND *);
+  void csoundInputMessage(CSOUND *csound, const char * sc);
+  int32_t csoundScoreEvent(CSOUND *, char type, const MYFLT *pFields,
+                        long numFields);
+
 extern void allocate_message_queue(CSOUND *csound);
 int32_t  playopen_dummy(CSOUND *, const csRtAudioParams *parm);
 void rtplay_dummy(CSOUND *, const MYFLT *outBuf, int32_t nbytes);

@@ -198,19 +198,6 @@ extern "C" {
   } OPCODINFO;
 
   /**
-   * Nen FFT interface
-   */
-  typedef struct _FFT_SETUP{
-    int32_t N, M;
-    void  *setup;
-    MYFLT *buffer;
-    int32_t    lib;
-    int32_t    d;
-    int32_t  p2;
-  } CSOUND_FFT_SETUP;
-
-
-  /**
    * plugin module info
    */
   typedef struct {

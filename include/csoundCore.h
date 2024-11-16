@@ -642,6 +642,22 @@ extern "C" {
   } PVOCEX_MEMFILE;
 
   /**@}*/
+  /** @name FFT function interface */
+  /**@{ */
+
+  /**
+   * New FFT interface
+   */
+  typedef struct _FFT_SETUP{
+    int32_t N, M;
+    void  *setup;
+    MYFLT *buffer;
+    int32_t    lib;
+    int32_t    d;
+    int32_t  p2;
+  } CSOUND_FFT_SETUP;
+
+  /**@}*/
   /** @name Macros to access INSDS/OPDS data from opcodes */
   /**@{ */
   

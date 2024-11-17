@@ -80,7 +80,7 @@ TEST_F (PluginTests, testAddOpcodeC)
         "instr 1 \n"
         "a1 oscili p4, p5 \n"
         "a2 opcode_test a1, 0dbfs, 0  \n"
-        "out  a2   \n"
+        "out  linen(a2,0.1,p3,0.1)   \n"
         "endin \n";
     
   csoundAppendOpcode(csound, "opcode_test", sizeof(OPC), 0,
@@ -93,6 +93,7 @@ TEST_F (PluginTests, testAddOpcodeC)
   ASSERT_TRUE (result == 0);
   while(!result)
     result = csoundPerformKsmps(csound);
+  csoundSleep(500);
 }
 
 #include "plugin.h"
@@ -146,7 +147,7 @@ TEST_F (PluginTests, testAddOpcodeCpp)
         "i1 simple 0 \n"
         "k2 simple 0dbfs \n"
         "a2 simple oscili(p4, p5) \n"
-        "out  a2*k2 + i1   \n"
+        "out  linen(a2*k2 + i1, 0.1,p3,0.1)  \n"
         "endin \n";
     
   csnd::on_load((csnd::Csound *)csound);
@@ -157,4 +158,5 @@ TEST_F (PluginTests, testAddOpcodeCpp)
   ASSERT_TRUE (result == 0);
   while(!result)
     result = csoundPerformKsmps(csound);
+  csoundSleep(500);
 }

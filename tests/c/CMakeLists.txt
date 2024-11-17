@@ -23,6 +23,7 @@ if(BUILD_TESTS)
         io_test.cpp
         server_test.cpp
         csound_plugin_opcode_test.cpp
+        perfthread_test.cpp
     )
 
     target_compile_features(unittests PUBLIC cxx_std_17)

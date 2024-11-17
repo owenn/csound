@@ -2,7 +2,7 @@
  * File:   csound_plugin_opcode_test.cpp
  * Author: vlazzarini
  *
- * Created on Niv 17, 2024
+ * Created on Nov 17, 2024
  */
 
 #define __BUILDING_LIBCSOUND
@@ -12,9 +12,6 @@
 #include <stdlib.h>
 #include "csoundCore.h"
 #include "gtest/gtest.h"
-
-#define csoundCompileOrc(a,b) csoundCompileOrc(a,b,0)
-#define csoundReadScore(a,b) csoundEventString(a,b,0)
 
 class PluginTests : public ::testing::Test {
 public:
@@ -89,9 +86,9 @@ TEST_F (PluginTests, testAddOpcodeC)
   csoundAppendOpcode(csound, "opcode_test", sizeof(OPC), 0,
                      "a", "aki", (SUBR) opcode_init, (SUBR) opcode_perf,
                      (SUBR) opcode_deinit);
-  result = csoundCompileOrc(csound, instrument);
+  result = csoundCompileOrc(csound, instrument, 0);
   ASSERT_TRUE (result == 0);
-  csoundReadScore(csound,  "i 1 0 1 0.5 440 \n");
+  csoundEventString(csound,  "i 1 0 1 0.5 440 \n", 0);
   result = csoundStart(csound);
   ASSERT_TRUE (result == 0);
   while(!result)
@@ -153,9 +150,9 @@ TEST_F (PluginTests, testAddOpcodeCpp)
         "endin \n";
     
   csnd::on_load((csnd::Csound *)csound);
-  result = csoundCompileOrc(csound, instrument);
+  result = csoundCompileOrc(csound, instrument, 0);
   ASSERT_TRUE (result == 0);
-  csoundReadScore(csound,  "i 1 0 1 0.5 440 \n");
+  csoundEventString(csound,  "i 1 0 1 0.5 550 \n", 0);
   result = csoundStart(csound);
   ASSERT_TRUE (result == 0);
   while(!result)

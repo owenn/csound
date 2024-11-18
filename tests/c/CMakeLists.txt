@@ -24,6 +24,7 @@ if(BUILD_TESTS)
         server_test.cpp
         csound_plugin_opcode_test.cpp
         perfthread_test.cpp
+        csound_test_sndfile.cpp
     )
 
     target_compile_features(unittests PUBLIC cxx_std_17)

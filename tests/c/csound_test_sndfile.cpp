@@ -57,7 +57,7 @@ void *sfile_open(CSOUND *csound, const char *path, int32_t mode,
 
 void *sfile_open_fd(CSOUND *csound, int32_t fd, int32_t mode, SFLIB_INFO *sfinfo,
                     int32_t close_desc) {
-  FILE *fp = fdopen(fd, mode == SFM_READ ? "r" : "w");
+  FILE *fp = fdopen(fd, mode == SFM_READ ? "rb" : "wb");
   if (fp != NULL) {
       sfile *file = (sfile *) csound->Calloc(csound, sizeof(sfile));
       file->fp = fp;
@@ -139,7 +139,7 @@ TEST_F (SndfileTests, testWriteSndfile)
         "endin \n";
   
   SNDFILE_CALLBACKS *sfcbs = sfile_setup(csound);   
-  //csoundSetSndfileCallbacks(csound, sfcbs);
+  csoundSetSndfileCallbacks(csound, sfcbs);
   csoundSetOption (csound, "--format=raw --format=double -o test.raw");
   result = csoundCompileOrc(csound, instrument, 0);
   ASSERT_TRUE (result == 0);

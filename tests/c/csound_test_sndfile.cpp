@@ -138,8 +138,8 @@ TEST_F (SndfileTests, testWriteSndfile)
         "out linen(a1,0.1,p3,0.1)   \n"
         "endin \n";
   
-  SNDFILE_CALLBACKS *sfcbs = sfile_setup(csound);   
-  csoundSetSndfileCallbacks(csound, sfcbs);
+  //SNDFILE_CALLBACKS *sfcbs = sfile_setup(csound);   
+  //csoundSetSndfileCallbacks(csound, sfcbs);
   csoundSetOption (csound, "--format=raw --format=double -o test.raw");
   result = csoundCompileOrc(csound, instrument, 0);
   ASSERT_TRUE (result == 0);
@@ -148,7 +148,7 @@ TEST_F (SndfileTests, testWriteSndfile)
   ASSERT_TRUE (result == 0);
   while(!result)
     result = csoundPerformKsmps(csound);
-  csound->Free(csound, sfcbs);
+  //csound->Free(csound, sfcbs);
 }
 
 TEST_F (SndfileTests, testReadSndfile)

@@ -41,17 +41,16 @@
 
 extern char *csound_orcget_text ( void *scanner );
 static int32_t is_label(char* ident, CONS_CELL* labelList);
-
 extern uint64_t csound_orcget_locn(void *);
 extern  char argtyp2(char*);
 extern  int32_t tree_arg_list_count(TREE *);
 void print_tree(CSOUND *, char *, TREE *);
+char *remove_type_quoting(CSOUND *csound, const char *outype);
 
 /* from csound_orc_compile.c */
 extern int32_t argsRequired(char* arrayName);
 extern char** splitArgs(CSOUND* csound, char* argString);
 extern int32_t pnum(char*);
-
 OENTRIES* find_opcode2(CSOUND*, char*);
 char* resolve_opcode_get_outarg(CSOUND* csound,
                                 OENTRIES* entries, char* inArgTypes);
@@ -305,9 +304,15 @@ CS_VARIABLE* find_var_from_pools(CSOUND* csound, char* varName,
     var = csoundFindVariableWithName(csound, typeTable->localPool,
                                      varBaseName);
     // then check for global variables that may have been explicitly defined
-    if(var == NULL)
+    if(var == NULL) {
     var = csoundFindVariableWithName(csound, csound->engineState.varPool,
                                      varBaseName);
+     if(var && var->varType == &CS_VAR_TYPE_INSTR) 
+             // the instr name variable exists in the engine varpool
+             // we now add it to the globalPool so that the compiler
+             // can find it and assign a value to it (compileTreeInternal)
+             csoundAddVariable(csound, typeTable->globalPool, var);
+    }
     if(var == NULL)
       var = csoundFindVariableWithName(csound, typeTable->globalPool,
                                        varBaseName);
@@ -597,6 +602,21 @@ char* get_arg_type2(CSOUND* csound, TREE* tree, TYPE_TABLE* typeTable)
       return NULL;
     }
 
+    /* check for instrument name variables on the engine varPool */
+    if((var = csoundFindVariableWithName(csound, csound->engineState.varPool,
+                                         tree->value->lexeme)) != NULL) {
+       if(var->varType == &CS_VAR_TYPE_INSTR)
+         // found it, return type.
+         return cs_strdup(csound, var->varType->varTypeName);
+     }    
+
+    if(!strcmp(tree->value->lexeme, "this_instr")) {
+      const CS_TYPE *varType = &CS_VAR_TYPE_INSTR;
+       // found this, return type.
+       return cs_strdup(csound, varType->varTypeName);
+     } 
+
+    
     if (is_reserved(s)) {
       return cs_strdup(csound, "r");                              /* rsvd */
     }
@@ -1140,11 +1160,11 @@ char* resolve_opcode_get_outarg(CSOUND* csound, OENTRIES* entries,
    compatible with the ones found in OENTRY's.  splitArgs converts back
    to internal representation. */
 char* convert_internal_to_external(CSOUND* csound, char* arg) {
-  int32_t i = 0, n = 0, dimensions;
+  int32_t i = 0, dimensions;
   char *start;
   char *retVal, *current;
   uint64_t nameLen, len = strlen(arg);
-  char type[64] = {0}, c;
+  char *type;
 
   if (arg == NULL || len == 1) {
     return arg;
@@ -1155,13 +1175,9 @@ char* convert_internal_to_external(CSOUND* csound, char* arg) {
   // : prepended and ; appended to name
   // so we need to remove them to avoid
   // accummulation
-
   // now remove any : or ; leftover in typename
-  do  {
-         c = arg[n++];
-         if(c == ':' || c == ';') continue;  
-         type[i++] = c;
-   } while (c);
+  type = remove_type_quoting(csound, arg);
+  
   // update arg & len
   arg = type;
   len = strlen(arg);
@@ -1208,7 +1224,7 @@ char* convert_internal_to_external(CSOUND* csound, char* arg) {
     *current++ = ']';
   }
   *current = '\0';
-  //csound->Free(csound, arg);
+  csound->Free(csound, type);
   return retVal;
 }
 
@@ -1405,6 +1421,7 @@ int32_t check_args_exist(CSOUND* csound, TREE* tree, TYPE_TABLE* typeTable) {
       case LABEL_TOKEN:
       case T_IDENT:
         varName = current->value->lexeme;
+        if(!strcmp(varName, "this_instr")) break;
         if (is_label(varName, typeTable->labelList)) {
           break;
         }
@@ -1422,11 +1439,13 @@ int32_t check_args_exist(CSOUND* csound, TREE* tree, TYPE_TABLE* typeTable) {
           break;
         }
         csound->Free(csound, argType);
+
         // search for the variable in all variable pools
         var = find_var_from_pools(csound, varName, varName, typeTable);
+
         if (UNLIKELY(var == NULL)) {
             synterr(csound,
-                    Str("Variable '%s' used before defined\nline %d"),
+                    Str("ArgCheck: variable '%s' used before defined\nline %d"),
                     varName, tree->line);
             do_baktrace(csound, tree->locn);
             return 0;
@@ -1438,9 +1457,9 @@ int32_t check_args_exist(CSOUND* csound, TREE* tree, TYPE_TABLE* typeTable) {
         var = find_var_from_pools(csound, varName, varName, typeTable);
         if (UNLIKELY(var == NULL)) {
             synterr(csound,
-                    Str("Variable '%s' used before defined\nline %d"),
-                    varName, tree->line);
-            do_baktrace(csound, tree->locn);
+                    Str("ArgCheck: variable '%s' used before defined\nLine %d\n"),
+                    varName, current->left->line);
+            do_baktrace(csound, current->left->locn);
             return 0;
         }
      
@@ -3324,4 +3343,21 @@ char tree_argtyp(CSOUND *csound, TREE *tree) {
     return 'i';
   }
   return argtyp2( tree->value->lexeme);
+}
+
+void add_instr_variable(CSOUND *csound,  TREE *x) {
+  /* add instr variable to engine varpool 
+     called by bison when instr ids are found
+  */
+  if (x->type == T_IDENT) {
+    int32_t ret;
+    char *varname = x->value->lexeme;
+    CS_VARIABLE *var = csoundCreateVariable(csound, csound->typePool,
+                                           &CS_VAR_TYPE_INSTR, varname,
+                                           NULL);
+    // Create the variable in the engine varPool
+    ret = csoundAddVariable(csound, csound->engineState.varPool, var);
+    if(ret != 0)
+      csound->Warning(csound, "Could not add instrument ref %s", varname);
+  }
 }

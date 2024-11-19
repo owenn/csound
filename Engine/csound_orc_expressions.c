@@ -72,6 +72,19 @@ TREE* tree_tail(TREE* node) {
   return t;
 }
 
+char *remove_type_quoting(CSOUND *csound, const char *outype) {
+     char *type, c;
+     int32_t n = 0, i = 0;
+     type = csound->Calloc(csound, strlen(outype) + 1);
+     // remove any : or ; leftover in typename
+     do  {
+         c = outype[n++];
+         if(c == ':' || c == ';') continue;  
+         type[i++] = c;
+      } while (c);
+     return type;
+}
+
 char *create_out_arg(CSOUND *csound, char* outype, int32_t argCount,
                      TYPE_TABLE* typeTable)
 {
@@ -96,33 +109,17 @@ char *create_out_arg(CSOUND *csound, char* outype, int32_t argCount,
      // at this point new types defined with string type names
      // still have : prepended and ; appended to name
      // we need to remove these for the type system to recognise the type
-     char type[64] = {0}, c;
-     int32_t n = 0, i = 0;
-     // remove any : or ; leftover in typename
-     do  {
-         c = outype[n++];
-         if(c == ':' || c == ';') continue;  
-         type[i++] = c;
-      } while (c);
-     
+    char *type = remove_type_quoting(csound, outype);
     // FIXME - struct arrays
     if (*type == '[') {
       snprintf(s, 16, "#%c%d[]", type[1], argCount);
       add_array_arg(csound, s, NULL, 1, typeTable);
     }
     else {
-      //            char* argType = cs_strndup(csound, outype + 1, strlen(outype) - 2);
       snprintf(s, 256, "#%s%d", type, argCount);
       add_arg(csound, s, type, typeTable);
     }
-    //        } else if(*outype == ':') {
-    //            char* argType = cs_strndup(csound, outype + 1, strlen(outype) - 2);
-    //            snprintf(s, 256, "#%s%d", argType, argCount);
-    //            add_arg(csound, s, argType, typeTable);
-    //        } else {
-    //            csound->Warning(csound, "ERROR: unknown outype found for out arg synthesis: %s\n", outype);
-    //            return NULL;
-    //        }
+    csound->Free(csound, type);
   }
   return s;
 }

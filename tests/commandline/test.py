@@ -177,6 +177,9 @@ def runTest():
     ["testnewline.csd", "test newline in statements"],
     ["testmidichannels.csd", "test use of mapped multiport channels"],
     ["test_max_table_len.csd", "test max table length"],
+    ["test_instr_type.csd", "test instr type and variables"],
+    ["test_delete_instr.csd", "test creating and deleting instr"],
+    ["test_create_instr.csd", "testing creating and scheduling instr"],
     ["test_complex_numbers.csd", "testing complex number operations"],
     ["test_schedule_named_instance.csd", "testing schedule with named instr instance"],
     ]

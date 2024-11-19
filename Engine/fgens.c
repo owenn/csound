@@ -26,6 +26,7 @@
 
 #include "csoundCore.h"         /*                      FGENS.C         */
 #include <ctype.h>
+#include "soundfile.h"
 #include "soundio.h"
 #include "cwindow.h"
 #include "cmath.h"
@@ -34,6 +35,7 @@
 #include "pvfileio.h"
 #include <stdlib.h>
 #include "fftlib.h"
+
 
 extern double besseli(double);
 static int32_t gen01raw(FGDATA *, FUNC *);
@@ -229,7 +231,7 @@ int32_t hfgens(CSOUND *csound, FUNC **ftpp, const EVTBLK *evtblkp, int32_t mode)
       ff.guardreq = ff.flen & 01;       /*  set guard request flg   */
       ff.flen &= -2L;                   /*  flen now w/o guardpt    */   
     }
-    if (ff.flen > MAXLEN)           
+    if (ff.flen >  MAXLEN)           
         return fterror(&ff, Str("illegal table length"));
     // now flen is set
     // test and set lobits
@@ -698,7 +700,7 @@ static int32_t gen08(FGDATA *ff, FUNC *ftp)
       }                                /* df1 is slope of parabola at x1 */
       else df1 = FL(0.0);
       if ((npts = (int32_t) (dx01 - curx)) > fplim - fp)
-        npts = fplim - fp;
+        npts = (int32_t) (fplim - fp);
       if (npts > 0) {                       /* for non-trivial segment: */
         slope = (f1 - f0) / dx01;           /*   get slope x0 to x1     */
         resd0 = df0 - slope;                /*   then residual slope    */
@@ -2542,7 +2544,7 @@ static int32_t gen01raw(FGDATA *ff, FUNC *ftp)
       return fterror(ff, Str("Failed to open file %s"), p->sfname);
     }
     if (ff->flen == 0) {                      /* deferred ftalloc requestd: */
-      if (UNLIKELY((ff->flen = p->framesrem + 1) <= 0)) {
+      if (UNLIKELY((ff->flen = (int32_t) p->framesrem + 1) <= 0)) {
         /*   get minsize from soundin */
         return fterror(ff, Str("deferred size, but filesize unknown"));
       }
@@ -2563,10 +2565,10 @@ static int32_t gen01raw(FGDATA *ff, FUNC *ftp)
     else ftp->nchanls  = 1;
     ftp->flenfrms = ff->flen / ftp->nchanls;  /* VL fixed 8/10/19: using table nchnls */
     ftp->gen01args.sample_rate = (MYFLT) p->sr;
-    ftp->cvtbas = LOFACT * p->sr * csound->onedsr;
+    ftp->cvtbas =  p->sr * csound->onedsr; 
     {
       SFLIB_INSTRUMENT lpd;
-      int32_t ans = sflib_command(fd, SFC_GET_INSTRUMENT, &lpd, sizeof(SFLIB_INSTRUMENT));
+      int32_t ans = csound->SndfileCommand(csound,fd, SFC_GET_INSTRUMENT, &lpd, sizeof(SFLIB_INSTRUMENT));
       if (ans) {
         double natcps;
 #ifdef BETA
@@ -2634,7 +2636,7 @@ static int32_t gen01raw(FGDATA *ff, FUNC *ftp)
       csound->Warning(csound, Str("GEN1: file truncated by ftable size"));
       csound->Warning(csound, Str("\taudio samps %d exceeds ftsize %d"),
                               (int32) p->framesrem, (int32) ff->flen);
-      needsiz(csound, ff, p->framesrem);    
+      needsiz(csound, ff, (int32_t) p->framesrem);    
     }
     ftp->soundend = inlocs / ftp->nchanls;   /* record end of sound samps */
     csound->FileClose(csound, p->fd);
@@ -3098,7 +3100,7 @@ int32_t csoundIsNamedGEN(CSOUND *csound, int32_t num) {
     NAMEDGEN *n = (NAMEDGEN*) csound->namedgen;
     while (n != NULL) {
       if (n->genum == abs(num))
-        return strlen(n->name);
+        return (int32_t) strlen(n->name);
       n = n->next;
     }
     return 0;

@@ -46,7 +46,7 @@ int32_t csTypeExistsWithSameName(TYPE_POOL* pool, CS_TYPE* typeInstance) {
 
 const CS_TYPE* csoundGetTypeWithVarTypeName(const TYPE_POOL* pool, const char* typeName) {
 
-    CS_TYPE_ITEM* current = pool->head;
+    CS_TYPE_ITEM* current = pool->head;    
     while (current != NULL) {
       if (strcmp(typeName, current->cstype->varTypeName) == 0) {
         return current->cstype;
@@ -110,7 +110,7 @@ char* getVarSimpleName(CSOUND* csound, const char* varName) {
     } else {
       int32_t start = 0;
       int32_t typeEnd = 0;
-      int32_t len = strlen(varName);
+      int32_t len = (int32_t) strlen(varName);
       int32_t newFirstLen, newSecondLen, newTotalLen;
       char* t = (char*) varName;
       char* t2;
@@ -349,8 +349,10 @@ int32_t copyVarGenericInit(CSOUND *csound, void *p) {
 
     if(type == &CS_VAR_TYPE_ARRAY) {
       ARRAYDAT* adat = (ARRAYDAT*) assign->a;
-      if(adat->arrayType == &CS_VAR_TYPE_I) flag = 1;
-    } else if(type == &CS_VAR_TYPE_I) flag = 1;
+      if(adat->arrayType == &CS_VAR_TYPE_I ||
+         adat->arrayType == &CS_VAR_TYPE_INSTR) flag = 1;
+    } else if(type == &CS_VAR_TYPE_I ||
+              type == &CS_VAR_TYPE_INSTR) flag = 1;
 
     if (flag) {
       assign->h.perf = copyVarNoOp;

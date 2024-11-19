@@ -135,7 +135,7 @@ static int32_t ReadMidiData_(CSOUND *csound, void *userData,
 #ifdef WIN32
       n = recv(sock, mbuf, nbytes, 0);
 #else
-      n = read(sock, mbuf, nbytes);
+      n = (int32_t) read(sock, mbuf, nbytes);
 #endif
       printf("ReadMidiData__ n = %d\n", n);
     }
@@ -160,10 +160,10 @@ static int32_t CloseMidiInDevice_(CSOUND *csound, void *userData)
 
 PUBLIC int32_t csoundModuleCreate(CSOUND *csound)
 {
-     OPARMS oparms;
-     csound->GetOParms(csound, &oparms);
+    const OPARMS *O;
+     O = csound->GetOParms(csound) ;
     /* nothing to do, report success */
-    if (oparms.msglevel & 0x400)
+    if (O->msglevel & 0x400)
       csound->Message(csound, "%s",
                       Str("ipMIDI real time MIDI plugin for Csound\n"));
     return 0;
@@ -172,15 +172,15 @@ PUBLIC int32_t csoundModuleCreate(CSOUND *csound)
 PUBLIC int32_t csoundModuleInit(CSOUND *csound)
 {
     char    *drv;
-    OPARMS oparms;
-    csound->GetOParms(csound, &oparms);
+   const OPARMS *O;
+    O = csound->GetOParms(csound) ;
 
     drv = (char*) (csound->QueryGlobalVariable(csound, "_RTMIDI"));
     if (drv == NULL)
       return 0;
     if (strcmp(drv, "ipmidi") != 0)
       return 0;
-    if (oparms.msglevel & 0x400)
+    if (O->msglevel & 0x400)
       csound->Message(csound, "%s", Str("ipmidi: ipMIDI module enabled\n"));
     csound->SetExternalMidiInOpenCallback(csound, OpenMidiInDevice_);
     csound->SetExternalMidiReadCallback(csound, ReadMidiData_);
@@ -191,5 +191,5 @@ PUBLIC int32_t csoundModuleInit(CSOUND *csound)
 PUBLIC int32_t csoundModuleInfo(void)
 {
     /* does not depend on MYFLT type */
-    return ((CS_APIVERSION << 16) + (CS_APISUBVER << 8));
+    return ((CS_VERSION << 16) + (CS_SUBVER << 8));
 }

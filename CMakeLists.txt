@@ -97,10 +97,10 @@ message(STATUS "Csound directory: ${CMAKE_HOME_DIRECTORY}")
 
 
 # Project definitions
-set(APIVERSION "7.0")
 set(CS_VERSION "7")
 set(CS_SUBVER "0")
 set(CS_PATCHLEVEL "0")
+set(APIVERSION "${CS_VERSION}.${CS_SUBVER}")
 
 message(STATUS "Csound version: ${CS_VERSION}.${CS_SUBVER}.${CS_PATCHLEVEL}")
 
@@ -121,6 +121,9 @@ if(OSXCROSS_TARGET)
 else()
     set(CS_FRAMEWORK_DEST "$ENV{HOME}/Library/Frameworks" CACHE PATH "Csound framework path")
 endif()
+
+set(CS_OPCODE_DIR "" CACHE PATH "opcodedir path")
+
 
 if(APPLE)
     set(CMAKE_INSTALL_RPATH ${CS_FRAMEWORK_DEST})
@@ -202,6 +205,7 @@ option(BARE_METAL "To configure for bare metal build" OFF)
 option(CUSTOM_MALLOC "Use custom malloc in bare metal builds" OFF)
 option(BUILD_PLUGINS "Build external opcodes as plugins" OFF)
 option(BUILD_WITH_LTO "Build with link-time optimisations" OFF)
+option(USE_SHORT_TABLE_LENGTH  "Build with original max table length 2^24" OFF)
 
 # secret rabbit code
 if (USE_VCPKG)
@@ -214,6 +218,12 @@ endif()
 if(SampleRate_FOUND)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_SRC")
     message(STATUS "Using Secret Rabbit Code")
+endif()
+
+
+if(USE_SHORT_TABLE_LENGTH)
+     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DSHORT_TABLE_LENGTH")
+    message(STATUS "Using short max table length")
 endif()
 
 
@@ -272,12 +282,16 @@ if(NOT MSVC AND NOT WASM)
     set(CMAKE_C_FLAGS_RELEASE "-O3")
 #endif
     if(${CMAKE_BUILD_TYPE} MATCHES "Debug")
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-missing-field-initializers")
-        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-missing-field-initializers")
         if (DEBUG_ERROR_ON_WARNING)
-            set(CMAKE_CXX_FLAGS "-Werror ${CMAKE_CXX_FLAGS}")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Werror")
             set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
         endif()
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+        set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
+        if(APPLE)
+         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wshorten-64-to-32 -Wpointer-sign -fsanitize=address")
+         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wshorten-64-to-32 -Wpointer-sign -fsanitize=address")
+        endif()        
     endif()
 endif()
 
@@ -414,6 +428,7 @@ else()
 endif()
 
 # set default user plugin directory
+if(CS_OPCODE_DIR STREQUAL "")
 if(APPLE)
     if(BUILD_INSTALLER)
        	set(CS_FRAMEWORK_FULL_PATH "/Library/Frameworks/${CSOUNDLIB}.framework/Versions/${APIVERSION}/Resources/Opcodes64")
@@ -422,7 +437,7 @@ if(APPLE)
     endif()
 
     add_definitions("-DCS_DEFAULT_PLUGINDIR=\"${CS_FRAMEWORK_FULL_PATH}\"")
-    set(DEFAULT_OPCODEDIR ${CS_FRAMEWORK_FULL_PATH})
+    set(DEFAULT_OPCODEDIR "${CS_FRAMEWORK_FULL_PATH}")
 
     # dir relative to $HOME
     if(USE_DOUBLE)
@@ -433,6 +448,11 @@ if(APPLE)
 
     add_definitions("-DCS_DEFAULT_USER_PLUGINDIR=\"${DEFAULT_USER_PLUGINDIR}\"")
 endif()
+else()
+   add_definitions("-DCS_DEFAULT_PLUGINDIR=\"${CS_OPCODE_DIR}\"")
+   set(DEFAULT_OPCODEDIR "${CS_OPCODE_DIR}")
+endif()
+
 
 # LINUX definition
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
@@ -492,7 +512,9 @@ if(USE_LIBSNDFILE)
         find_package(SndFile CONFIG REQUIRED)
         assign_bool(SndFile_FOUND TARGET SndFile::sndfile)
     else()
+        message(STATUS "looking  at ${CMAKE_PREFIX_PATH}")
         find_package(SndFile MODULE)
+        message(STATUS "libsndfile found: ${SndFile_LIBRARY}")
     endif()
 endif()
 check_deps(USE_LIBSNDFILE SndFile_FOUND)
@@ -722,6 +744,8 @@ set(libcsound_SRCS
     Engine/extract.c
     Engine/fgens.c
     Engine/insert.c
+    Engine/srconvert.c
+    Engine/udo.c
     Engine/linevent.c
     Engine/memalloc.c
     Engine/memfiles.c
@@ -753,6 +777,7 @@ set(libcsound_SRCS
     OOps/aops.c
     OOps/bus.c
     OOps/cmath.c
+    OOps/complex_ops.c
     OOps/diskin2.c
     OOps/disprep.c
     OOps/dumpf.c
@@ -1210,6 +1235,7 @@ endif()
 
 if(APPLE)
     if(NOT IOS)
+        target_link_options(${CSOUNDLIB} PRIVATE LINKER:-adhoc_codesign)
         set_target_properties(${CSOUNDLIB} PROPERTIES FRAMEWORK YES)
         set_target_properties(${CSOUNDLIB} PROPERTIES FRAMEWORK_VERSION "${APIVERSION}")
         set_target_properties(${CSOUNDLIB} PROPERTIES PUBLIC_HEADER

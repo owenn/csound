@@ -174,6 +174,12 @@ def runTest():
     ["test_plusname.csd", "test +Name for instr name"],
     ["testnewline.csd", "test newline in statements"],
     ["testmidichannels.csd", "test use of mapped multiport channels"],
+    ["test_max_table_len.csd", "test max table length"],
+    ["test_instr_type.csd", "test instr type and variables"],
+    ["test_delete_instr.csd", "test creating and deleting instr"],
+    ["test_create_instr.csd", "testing creating and scheduling instr"],
+    ["test_complex_numbers.csd", "testing complex number operations"],
+    ["test_schedule_named_instance.csd", "testing schedule with named instr instance"],
     ["test_ambiguous_opcall.csd", "test ambiguous opcall examples"],
     ]
 
@@ -203,11 +209,22 @@ def runTest():
         ["udo/fail_invalid_xin.csd", "fail due to invalid xin", 1],
         ["udo/fail_invalid_xout.csd", "fail due to invalid xout", 1],
         ["udo/test_udo_xout_const.csd", "Constants as xout inputs work"],
+        ["udo/pass_by_ref.csd", "Pass-by-ref works with new-style UDOs"],
+    ]
+
+    maxallocTests = [
+        ["test_maxalloc_turnoff_lt_0.csd", "Test maxalloc opcode less than 0", 1],
+        ["test_maxalloc_turnoff_gt_2.csd", "Test maxalloc opcode greater than 2", 1],
+        ["test_maxalloc_turnoff_default.csd", "Test maxalloc opcode defaults 0"],
+        ["test_maxalloc_turnoff_eq_0.csd", "Test maxalloc opcode value of 0"],
+        ["test_maxalloc_turnoff_eq_1.csd", "Test maxalloc opcode value of 1"],
+        ["test_maxalloc_turnoff_eq_2.csd", "Test maxalloc opcode value of 2"]
     ]
 
     tests += arrayTests
     tests += structTests
     tests += udoTests
+    tests += maxallocTests
 
     output = ""
     tempfile = 'csound_test_output.txt'

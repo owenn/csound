@@ -19,15 +19,22 @@
 
 /* $Id: mp3dec.c,v 1.6 2009/03/01 15:27:05 jpff Exp $ */
 
+#ifdef BUILD_PLUGINS
+#include "csdl.h"
+#else
+#include "csoundCore.h"
+#endif
+
 #include "mp3dec_internal.h"
 
-mp3dec_t mp3dec_init(void)
+mp3dec_t mp3dec_init(CSOUND *csound)
 {
     register struct mp3dec_t *mp3 =
       (struct mp3dec_t *)malloc(sizeof(struct mp3dec_t));
 
     if (!mp3) return NULL;
     memset(mp3, 0, sizeof(struct mp3dec_t));
+    mp3->csound = csound;
     mp3->size = sizeof(struct mp3dec_t);
     mp3->f = NULL;
     mp3->mpadec = mpadec_init();
@@ -36,6 +43,15 @@ mp3dec_t mp3dec_init(void)
       return NULL;
     }
     return mp3;
+}
+
+void *mp3dec_open_file(mp3dec_t mp3dec, char *name, FILE **f)
+{
+    register struct mp3dec_t *mp3 = (struct mp3dec_t *)mp3dec;
+    mp3->fd = mp3->csound->FileOpen(mp3->csound, f, CSFILE_STD,
+                                    name, "rb", "SFDIR;SSDIR",
+                                    CSFTYPE_OTHER_BINARY, 0);
+    return mp3->fd;
 }
 
 int32_t mp3dec_init_file(mp3dec_t mp3dec, FILE *f, int64_t length, int32_t nogap)
@@ -50,7 +66,8 @@ int32_t mp3dec_init_file(mp3dec_t mp3dec, FILE *f, int64_t length, int32_t nogap
       mp3dec_reset(mp3);
       return MP3DEC_RETCODE_INVALID_PARAMETERS;
     }
-    if (mp3->flags & MP3DEC_FLAG_INITIALIZED) fclose(mp3->f);
+    if (mp3->flags & MP3DEC_FLAG_INITIALIZED) 
+      mp3->csound->FileClose(mp3->csound, mp3->fd);
     mp3->f = f;
     mp3->flags = MP3DEC_FLAG_SEEKABLE;
     mp3->stream_offset = mp3->stream_size = mp3->stream_position = 0;
@@ -87,7 +104,7 @@ int32_t mp3dec_init_file(mp3dec_t mp3dec, FILE *f, int64_t length, int32_t nogap
       }
       (void) fseek(f, mp3->stream_offset, SEEK_SET);
     } else mp3->flags &= ~MP3DEC_FLAG_SEEKABLE; 
-    r = fread(mp3->in_buffer, 1, 4, f);
+    r = (int32_t) fread(mp3->in_buffer, 1, 4, f);
     if (r < 4) {
       mp3dec_reset(mp3);
       return ((r < 0) ? MP3DEC_RETCODE_INVALID_PARAMETERS :
@@ -100,7 +117,7 @@ int32_t mp3dec_init_file(mp3dec_t mp3dec, FILE *f, int64_t length, int32_t nogap
       mp3->flags &= ~MP3DEC_FLAG_SEEKABLE;
       if (mp3->stream_size && (n > (mp3->stream_size - mp3->in_buffer_used)))
         n = (int32_t)(mp3->stream_size - mp3->in_buffer_used);
-      n = fread(mp3->in_buffer + mp3->in_buffer_used, 1, n, f);
+      n =  (int32_t) fread(mp3->in_buffer + mp3->in_buffer_used, 1, n, f);
       if (n < 0) n = 0;
       mp3->in_buffer_used += n;
       mp3->stream_position = mp3->in_buffer_used;
@@ -109,7 +126,7 @@ int32_t mp3dec_init_file(mp3dec_t mp3dec, FILE *f, int64_t length, int32_t nogap
       int32_t n = sizeof(mp3->in_buffer);
       if (mp3->stream_size && (n > mp3->stream_size))
         n = (int32_t)mp3->stream_size;
-      n = fread(mp3->in_buffer, 1, n, f);
+      n =  (int32_t) fread(mp3->in_buffer, 1, n, f);
       if (n < 0) n = 0;
       mp3->stream_position = mp3->in_buffer_used = n;
     }
@@ -139,7 +156,7 @@ int32_t mp3dec_init_file(mp3dec_t mp3dec, FILE *f, int64_t length, int32_t nogap
           int32_t n = sizeof(mp3->in_buffer);
           if (mp3->stream_size && (n > mp3->stream_size))
             n = (int32_t)mp3->stream_size;
-          n = fread(mp3->in_buffer, 1, n, f);
+          n =  (int32_t) fread(mp3->in_buffer, 1, n, f);
           if (n <= 0){ /* n = 0; */ break; } /* EOF */
           mp3->stream_position = mp3->in_buffer_used = n;
           r = mpadec_decode(mp3->mpadec, mp3->in_buffer,
@@ -189,7 +206,8 @@ int32_t mp3dec_uninit(mp3dec_t mp3dec)
 
     if (!mp3 || (mp3->size != sizeof(struct mp3dec_t)) || !mp3->mpadec)
       return MP3DEC_RETCODE_INVALID_HANDLE;
-    if (mp3->flags & MP3DEC_FLAG_INITIALIZED) fclose(mp3->f);
+    if (mp3->flags & MP3DEC_FLAG_INITIALIZED)
+      mp3->csound->FileClose(mp3->csound, mp3->fd);
     mp3->f = NULL;
     mp3->flags = 0;
     mpadec_uninit(mp3->mpadec);
@@ -204,7 +222,8 @@ int32_t mp3dec_reset(mp3dec_t mp3dec)
 
     if (!mp3 || (mp3->size != sizeof(struct mp3dec_t)) || !mp3->mpadec)
       return MP3DEC_RETCODE_INVALID_HANDLE;
-    if (mp3->flags & MP3DEC_FLAG_INITIALIZED) fclose(mp3->f);
+    if (mp3->flags & MP3DEC_FLAG_INITIALIZED)
+      mp3->csound->FileClose(mp3->csound, mp3->fd);
     mp3->f = NULL;
     mp3->flags = 0;
     mpadec_reset(mp3->mpadec);
@@ -297,7 +316,7 @@ int32_t mp3dec_decode(mp3dec_t mp3dec, uint8_t *buf, uint32_t bufsize, uint32_t 
       n = sizeof(mp3->in_buffer) - mp3->in_buffer_used;
       if (mp3->stream_size && (n > (mp3->stream_size - mp3->stream_position)))
         n = (int32_t)(mp3->stream_size - mp3->stream_position);
-      if (n) r = fread(mp3->in_buffer + mp3->in_buffer_used, 1, n, mp3->f);
+      if (n) r =  (int32_t) fread(mp3->in_buffer + mp3->in_buffer_used, 1, n, mp3->f);
       else r = 0;
       if (r < 0) r = 0;
       mp3->in_buffer_used += r;

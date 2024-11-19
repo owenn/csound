@@ -54,6 +54,7 @@ TEST_F (MessageBufferTests, testBufferRun)
                                   "asig oscil 0.1, 440\n"
                                   "out asig\n"
                                   "endin\n");
+    ASSERT_EQ(result, CSOUND_SUCCESS);
     csoundReadScore(csound, "i 1 0 0.1\n");
     csoundStart(csound);
 
@@ -62,7 +63,7 @@ TEST_F (MessageBufferTests, testBufferRun)
     while (csoundGetMessageCnt(csound)) {
         const char * msg = csoundGetFirstMessage(csound);
         ASSERT_TRUE (msg != NULL);
-        csoundPopFirstMessage(csound);
         printf("CSOUND MESSAGE: %s", msg);
+        csoundPopFirstMessage(csound);
     }
 }

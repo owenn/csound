@@ -101,11 +101,7 @@ typedef uint_least16_t uint16;
 #endif
 
 #if !defined(USE_DOUBLE)
-#if !defined(_MSC_VER)
 #include "float-version.h"
-#else
-#define USE_DOUBLE
-#endif
 #endif
 
 #ifdef USE_DOUBLE
@@ -572,6 +568,4 @@ typedef int32_t spin_lock_t;
 #else
 # define ignore_value(x) ((void) (x))
 #endif
-
-
 #endif  /* CSOUND_SYSDEP_H */

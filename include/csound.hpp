@@ -123,10 +123,6 @@ class PUBLIC Csound
   {
     return csoundGetVersion();
   }
-  virtual int32_t GetAPIVersion()
-  {
-    return csoundGetAPIVersion();
-  }
   virtual void *GetHostData()
   {
     return csoundGetHostData(csound);
@@ -143,11 +139,8 @@ class PUBLIC Csound
   {
     return csoundSetOption(csound, option);
   }
-  virtual void SetParams(CSOUND_PARAMS *p){
-    csoundSetParams(csound, p);
-  }
-  virtual void GetParams(CSOUND_PARAMS *p){
-    csoundGetParams(csound, p);
+  virtual const OPARMS *GetParams(){
+    return csoundGetParams(csound);
   }
   virtual int32_t CompileOrc(const char *str, int32_t async = 0) {
     return csoundCompileOrc(csound, str, async);
@@ -327,7 +320,7 @@ class PUBLIC Csound
   {
     csoundKeyPress(csound, c);
   }
-  virtual void Event(int32_t type, MYFLT *pFields, long numFields, int32_t async = 0)
+  virtual void Event(int32_t type, MYFLT *pFields, int32_t numFields, int32_t async = 0)
   {
     csoundEvent(csound, type, pFields, numFields, async);
   }

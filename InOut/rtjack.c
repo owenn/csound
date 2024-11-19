@@ -386,8 +386,8 @@ static void openJackStreams(RtJackGlobals *p)
     char    buf[256];
     int32_t     i, j, k;
     CSOUND *csound = p->csound;
-    OPARMS oparms;
-    csound->GetOParms(csound, &oparms);
+   const OPARMS *O;
+    O = csound->GetOParms(csound) ;
 
 
     /* connect to JACK server */
@@ -396,7 +396,7 @@ static void openJackStreams(RtJackGlobals *p)
       rtJack_Error(csound, -1, Str("could not connect to JACK server"));
 
     csound->GetSystemSr(csound, jack_get_sample_rate(p->client));
-    if(oparms.msglevel || oparms.odebug)
+    if(O->msglevel || O->odebug)
       csound->Message(csound, "system sr: %f\n", csound->GetSystemSr(csound,0));
     if(p->sampleRate < 0) p->sampleRate = jack_get_sample_rate(p->client);
 
@@ -410,7 +410,7 @@ static void openJackStreams(RtJackGlobals *p)
     if (UNLIKELY(p->sampleRate < 1000 || p->sampleRate > 768000))
       rtJack_Error(csound, -1, Str("invalid sample rate"));
     if (UNLIKELY(p->sampleRate != (int32_t) jack_get_sample_rate(p->client))) {
-      if(oparms.sr_override != 0.) {
+      if(O->sr_override != 0.) {
         p->sampleRate = (int32_t) jack_get_sample_rate(p->client);
       } else {
         snprintf(&(buf[0]), 256, Str("sample rate %d does not match "
@@ -904,9 +904,9 @@ static int32_t rtrecord_(CSOUND *csound, MYFLT *inbuf_, int32_t bytes_)
                                      10000*(nframes/p->sr));
         if (ret) {
           memset(inbuf_, 0, bytes_);
-          OPARMS oparms;
-          csound->GetOParms(csound, &oparms);
-          if (UNLIKELY(oparms.msglevel & 4))
+         const OPARMS *O;
+          O = csound->GetOParms(csound) ;
+          if (UNLIKELY(O->msglevel & 4))
             csound->Warning(csound, "%s", Str("rtjack: input audio timeout"));
           return bytes_;
         }
@@ -930,9 +930,9 @@ static int32_t rtrecord_(CSOUND *csound, MYFLT *inbuf_, int32_t bytes_)
     }
     if (p->xrunFlag) {
       p->xrunFlag = 0;
-      OPARMS oparms;
-      csound->GetOParms(csound, &oparms);
-      if (UNLIKELY(oparms.msglevel & 4))
+     const OPARMS *O;
+      O = csound->GetOParms(csound) ;
+      if (UNLIKELY(O->msglevel & 4))
         csound->Warning(csound, "%s", Str("rtjack: xrun in real time audio"));
     }
 
@@ -1125,9 +1125,9 @@ int32_t listDevices(CSOUND *csound, CS_AUDIODEVICE *list, int32_t isOutput){
 }
 
 typedef struct RtJackMIDIGlobals_ {
-  char clientName[MAX_NAME_LEN];
-  char inputPortName[MAX_NAME_LEN];
-  char outputPortName[MAX_NAME_LEN];
+  char clientName[MAX_NAME_LEN + 1];
+  char inputPortName[MAX_NAME_LEN + 1];
+  char outputPortName[MAX_NAME_LEN + 1];
 } RtJackMIDIGlobals;
 
 
@@ -1136,11 +1136,11 @@ PUBLIC int32_t csoundModuleCreate(CSOUND *csound)
 {
     RtJackGlobals   *p;
     int32_t             i, j;
-    OPARMS oparms;
-    csound->GetOParms(csound, &oparms);
+   const OPARMS *O;
+    O = csound->GetOParms(csound) ;
 
     /* allocate and initialise globals */
-    if (UNLIKELY(oparms.msglevel & 0x400))
+    if (UNLIKELY(O->msglevel & 0x400))
       csound->Message(csound, "%s",
                       Str("JACK real-time audio module for Csound\n"));
     if (UNLIKELY(csound->CreateGlobalVariable(csound, "_rtjackGlobals",
@@ -1203,7 +1203,7 @@ PUBLIC int32_t csoundModuleCreate(CSOUND *csound)
 
 
     RtJackMIDIGlobals *pm;
-    if (oparms.msglevel & 0x400)
+    if (O->msglevel & 0x400)
       csound->Message(csound, "%s", Str("JACK MIDI module for Csound\n"));
     if (csound->CreateGlobalVariable(csound, "_rtjackMIDIGlobals",
                                      sizeof(RtJackMIDIGlobals)) != 0) {
@@ -1219,8 +1219,8 @@ PUBLIC int32_t csoundModuleCreate(CSOUND *csound)
     strcpy(&(pm->outputPortName[0]), "port");
     /*   client name */
     i = jack_client_name_size();
-    if (i > (MAX_NAME_LEN + 1))
-      i = (MAX_NAME_LEN + 1);
+    if (i > MAX_NAME_LEN)
+      i = MAX_NAME_LEN;
     csound->CreateConfigurationVariable(csound, "jack_midi_client",
                                         (void*) &(pm->clientName[0]),
                                         CSOUNDCFG_STRING, 0, NULL, &i,
@@ -1230,17 +1230,17 @@ PUBLIC int32_t csoundModuleCreate(CSOUND *csound)
 
     /*   input port name */
     i = jack_port_name_size() - 3;
-    if (i > (MAX_NAME_LEN + 1))
-      i = (MAX_NAME_LEN + 1);
+    if (i > MAX_NAME_LEN)
+      i = MAX_NAME_LEN;
     csound->CreateConfigurationVariable(csound, "jack_midi_inportname",
                                         (void*) &(pm->inputPortName[0]),
                                         CSOUNDCFG_STRING, 0, NULL, &i,
                                         Str("JACK MIDI input port name"
                                             "(default: port)"), NULL);
     /*   output port name */
-    i = jack_port_name_size() - 3;
-    if (i > (MAX_NAME_LEN + 1))
-      i = (MAX_NAME_LEN + 1);
+    i = jack_port_name_size() - 4;
+    if (i > MAX_NAME_LEN)
+      i = MAX_NAME_LEN;
     csound->CreateConfigurationVariable(csound, "jack_midi_outportname",
                                         (void*) &(pm->outputPortName[0]),
                                         CSOUNDCFG_STRING, 0, NULL, &i,
@@ -1268,7 +1268,7 @@ int32_t MidiInProcessCallback(jack_nframes_t nframes, void *userData){
                               jack_port_get_buffer(dev->port,nframes),
                               n++) == 0) {
       if (UNLIKELY(csound->WriteCircularBuffer(csound,dev->cb,
-                                              event.buffer,event.size)
+                                               event.buffer,(int32_t) event.size)
                   != (int32_t) event.size)){
         csound->Warning(csound, "%s", Str("Jack MIDI module: buffer overflow"));
         return 1;
@@ -1286,13 +1286,13 @@ static int32_t midi_in_open(CSOUND *csound,
     jack_port_t  *jack_port;
     jackMidiDevice *dev;
     RtJackMIDIGlobals *pm;
-    char clientName[MAX_NAME_LEN+3];
+    char clientName[MAX_NAME_LEN+4];
 
     pm =
       (RtJackMIDIGlobals*) csound->QueryGlobalVariableNoCheck(csound,
                                                               "_rtjackMIDIGlobals");
 
-    sprintf(clientName, "%s_in", pm->clientName);
+    snprintf(clientName, MAX_NAME_LEN+4, "%s_in", pm->clientName);
     if (UNLIKELY((jack_client =
                  jack_client_open(clientName, 0, NULL)) == NULL)){
       *userData = NULL;
@@ -1400,12 +1400,12 @@ static int32_t midi_out_open(CSOUND *csound, void **userData,
     jack_port_t  *jack_port;
     jackMidiDevice *dev;
     RtJackMIDIGlobals *pm;
-    char clientName[MAX_NAME_LEN+4];
+    char clientName[MAX_NAME_LEN+5];
 
     pm =
       (RtJackMIDIGlobals*) csound->QueryGlobalVariableNoCheck(csound,
                                                               "_rtjackMIDIGlobals");
-    sprintf(clientName, "%s_out", pm->clientName);
+    snprintf(clientName, MAX_NAME_LEN+5, "%s_out", pm->clientName);
     if(UNLIKELY((jack_client =
                  jack_client_open(clientName, 0, NULL)) == NULL)){
       *userData = NULL;
@@ -1555,16 +1555,16 @@ PUBLIC int32_t csoundModuleDestroy(CSOUND *csound)
 PUBLIC int32_t csoundModuleInit(CSOUND *csound)
 {
     char    *drv;
-   OPARMS O;
-    csound->GetOParms(csound, &O);
-    csound->module_list_add(csound,"jack", "audio");
+   const OPARMS *O;
+    O = csound->GetOParms(csound) ;
+    csound->ModuleListAdd(csound,"jack", "audio");
     drv = (char*) csound->QueryGlobalVariable(csound, "_RTAUDIO");
     if (drv == NULL)
       return 0;
     if (!(strcmp(drv, "jack") == 0 || strcmp(drv, "Jack") == 0 ||
           strcmp(drv, "JACK") == 0))
       return 0;
-    if(O.msglevel || O.odebug)
+    if(O->msglevel || O->odebug)
      csound->Message(csound, "%s", Str("rtaudio: JACK module enabled\n"));
     {
       /* register Csound interface functions */
@@ -1582,7 +1582,7 @@ PUBLIC int32_t csoundModuleInit(CSOUND *csound)
     if (!(strcmp(drv, "jack") == 0 || strcmp(drv, "Jack") == 0 ||
           strcmp(drv, "JACK") == 0))
       return 0;
-    if(O.msglevel || O.odebug)
+    if(O->msglevel || O->odebug)
      csound->Message(csound, "%s", Str("rtmidi: JACK module enabled\n"));
     {
       csound->SetExternalMidiInOpenCallback(csound, midi_in_open);
@@ -1599,5 +1599,5 @@ PUBLIC int32_t csoundModuleInit(CSOUND *csound)
 
 PUBLIC int32_t csoundModuleInfo(void)
 {
-    return ((CS_APIVERSION << 16) + (CS_APISUBVER << 8) + (int32_t) sizeof(MYFLT));
+    return ((CS_VERSION << 16) + (CS_SUBVER << 8) + (int32_t) sizeof(MYFLT));
 }

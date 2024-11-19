@@ -165,7 +165,6 @@
     extern TREE* constant_fold(CSOUND *, TREE *);
     extern void csound_orcerror(PARSE_PARM *, void *, CSOUND *,
                                 TREE**, const char*);
-    extern int add_udo_definition(CSOUND*, char *, char *, char *, int);
     extern ORCTOKEN *lookup_token(CSOUND*,char*,void*);
 #define LINE csound_orcget_lineno(scanner)
 #define LOCN csound_orcget_locn(scanner)
@@ -173,7 +172,8 @@
     extern int csound_orcget_lineno(void *);
     extern ORCTOKEN *make_string(CSOUND *, char *);
     extern char* UNARY_PLUS;
-    extern TREE* make_opcall_from_func_start(CSOUND*, int, int, int, TREE*, TREE*);
+    extern TREE* make_opcall_from_func_start(CSOUND*, int32_t, uint64_t, int32_t, TREE*, TREE*);
+    extern void add_instr_variable(CSOUND *csound,  TREE *x);
 %}
 %%
 
@@ -226,7 +226,7 @@ struct_arg : identifier
 instr_definition : INSTR_TOKEN instr_id_list NEWLINE
                     { csound_orcput_ilocn(scanner, LINE, LOCN); }
                   statement_list ENDIN_TOKEN NEWLINE
-                 {  $$ = make_node(csound, csound_orcget_iline(scanner),
+                  {  $$ = make_node(csound, (int32_t) csound_orcget_iline(scanner),
                                   csound_orcget_ilocn(scanner), INSTR_TOKEN,
                                   $2, $5);
                     csp_orc_sa_instr_finalize(csound);
@@ -240,7 +240,9 @@ instr_definition : INSTR_TOKEN instr_id_list NEWLINE
 
 instr_id_list : instr_id_list ',' instr_id
                   { $$ = appendToTree(csound, $1, $3); }
-              | instr_id  { csp_orc_sa_instr_add_tree(csound, $1); }
+              | instr_id  { csp_orc_sa_instr_add_tree(csound, $1);
+                    add_instr_variable(csound, $1);
+                }
               ;
 
 instr_id : integer

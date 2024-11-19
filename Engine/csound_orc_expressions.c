@@ -49,8 +49,8 @@ extern char* get_array_sub_type(CSOUND* csound, char*);
 extern char* convert_external_to_internal(CSOUND* csound, char* arg);
 
 
-static TREE *create_boolean_expression(CSOUND*, TREE*, int32_t,  int32_t,  TYPE_TABLE*);
-static TREE *create_expression(CSOUND *, TREE *, int32_t,  int32_t,  TYPE_TABLE*);
+static TREE *create_boolean_expression(CSOUND*, TREE*, int32_t,  uint64_t,  TYPE_TABLE*);
+static TREE *create_expression(CSOUND *, TREE *, int32_t,  uint64_t,  TYPE_TABLE*);
 char *check_annotated_type(CSOUND* csound, OENTRIES* entries,
                            char* outArgTypes);
 static TREE *create_synthetic_label(CSOUND *csound, int32 count);
@@ -69,6 +69,19 @@ TREE* tree_tail(TREE* node) {
     t = t->next;
   }
   return t;
+}
+
+char *remove_type_quoting(CSOUND *csound, const char *outype) {
+     char *type, c;
+     int32_t n = 0, i = 0;
+     type = csound->Calloc(csound, strlen(outype) + 1);
+     // remove any : or ; leftover in typename
+     do  {
+         c = outype[n++];
+         if(c == ':' || c == ';') continue;  
+         type[i++] = c;
+      } while (c);
+     return type;
 }
 
 char *create_out_arg(CSOUND *csound, char* outype, int32_t argCount,
@@ -91,25 +104,22 @@ char *create_out_arg(CSOUND *csound, char* outype, int32_t argCount,
     }
     add_arg(csound, s, NULL, typeTable);
   } else {
+     // VL 15.10.24
+     // at this point new types defined with string type names
+     // still have : prepended and ; appended to name
+     // we need to remove these for the type system to recognise the type
+    char *type = remove_type_quoting(csound, outype);
     // FIXME - struct arrays
-    if (*outype == '[') {
-      snprintf(s, 16, "#%c%d[]", outype[1], argCount);
+    if (*type == '[') {
+      snprintf(s, 16, "#%c%d[]", type[1], argCount);
       add_array_arg(csound, s, NULL, 1, typeTable);
-    } else {
-      //            char* argType = cs_strndup(csound, outype + 1, strlen(outype) - 2);
-      snprintf(s, 256, "#%s%d", outype, argCount);
-      add_arg(csound, s, outype, typeTable);
     }
-    //        } else if(*outype == ':') {
-    //            char* argType = cs_strndup(csound, outype + 1, strlen(outype) - 2);
-    //            snprintf(s, 256, "#%s%d", argType, argCount);
-    //            add_arg(csound, s, argType, typeTable);
-    //        } else {
-    //            csound->Warning(csound, "ERROR: unknown outype found for out arg synthesis: %s\n", outype);
-    //            return NULL;
-    //        }
+    else {
+      snprintf(s, 256, "#%s%d", type, argCount);
+      add_arg(csound, s, type, typeTable);
+    }
+    csound->Free(csound, type);
   }
-
   return s;
 }
 
@@ -318,7 +328,7 @@ int32_t is_boolean_expression_node(TREE *node)
 //#ifdef JPFF
 
 static TREE *create_cond_expression(CSOUND *csound,
-                                    TREE *root, int32_t line, int32_t locn,
+                                    TREE *root, int32_t line, uint64_t locn,
                                     TYPE_TABLE* typeTable)
 {
   TREE *last = NULL;
@@ -536,7 +546,7 @@ static char* create_out_arg_for_expression(CSOUND* csound, char* op, TREE* left,
  * Create a chain of Opcode (OPTXT) text from the AST node given. Called from
  * create_opcode when an expression node has been found as an argument
  */
-static TREE *create_expression(CSOUND *csound, TREE *root, int32_t line, int32_t locn,
+static TREE *create_expression(CSOUND *csound, TREE *root, int32_t line, uint64_t locn,
                                TYPE_TABLE* typeTable)
 {
   char op[80], *outarg = NULL;
@@ -633,7 +643,7 @@ static TREE *create_expression(CSOUND *csound, TREE *root, int32_t line, int32_t
   case T_FUNCTION:
     {
       char *outtype, *outtype_internal;
-      int32_t len = strlen(root->value->lexeme);
+      int32_t len = (int32_t) strlen(root->value->lexeme);
       strNcpy(op, root->value->lexeme, len+1);
       if (UNLIKELY(PARSER_DEBUG))
         csound->Message(csound, "Found OP: %s\n", op);
@@ -844,7 +854,7 @@ static TREE *create_expression(CSOUND *csound, TREE *root, int32_t line, int32_t
  * create_opcode when an expression node has been found as an argument
  */
 static TREE *create_boolean_expression(CSOUND *csound, TREE *root,
-                                       int32_t line, int32_t locn, TYPE_TABLE* typeTable)
+                                       int32_t line, uint64_t locn, TYPE_TABLE* typeTable)
 {
   char *op, *outarg;
   TREE *anchor = NULL, *last;
@@ -1045,7 +1055,7 @@ void handle_negative_number(CSOUND* csound, TREE* root)
 {
   if (root->type == S_UMINUS &&
       (root->right->type == INTEGER_TOKEN || root->right->type == NUMBER_TOKEN)) {
-    int32_t len = strlen(root->right->value->lexeme);
+    int32_t len = (int32_t) strlen(root->right->value->lexeme);
     char* negativeNumber = csound->Malloc(csound, len + 3);
     negativeNumber[0] = '-';
     strcpy(negativeNumber + 1, root->right->value->lexeme);

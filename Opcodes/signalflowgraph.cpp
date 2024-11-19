@@ -157,7 +157,6 @@ struct FtGenOnce;
 
 static const int32_t MAX_STRING = 256;
 
-static int32_t (*isstrcod)(MYFLT) = nullptr;
 
 std::ostream &operator<<(std::ostream &stream, const EVTBLK &a) {
   stream << a.opcod;

@@ -94,7 +94,7 @@ int32_t mp3ininit_(CSOUND *csound, MP3IN *p, int32_t stringname)
   }
   /* set default format parameters */
   /* open file */
-  p->mpa = mpa = mp3dec_init();
+  p->mpa = mpa = mp3dec_init(csound);
   if (UNLIKELY(!mpa)) {
     return csound->InitError(csound, "%s", Str("Not enough memory\n"));
   }
@@ -114,9 +114,8 @@ int32_t mp3ininit_(CSOUND *csound, MP3IN *p, int32_t stringname)
   }
   else strncpy(name, ((STRINGDAT *)p->iFileCode)->data, 1023);
 
-  if (UNLIKELY(csound->FileOpen(csound, &f, CSFILE_STD,
-                                name, "rb", "SFDIR;SSDIR",
-                                CSFTYPE_OTHER_BINARY, 0) == NULL)) {
+
+  if (UNLIKELY(mp3dec_open_file(mpa, name, &f) == NULL)) {
     mp3dec_uninit(mpa);
     return
       csound->InitError(csound, Str("mp3in: %s: failed to open file"), name);
@@ -216,7 +215,7 @@ int32_t mp3in(CSOUND *csound, MP3IN *p)
   uint8_t *buffer = p->buf;
   MYFLT *al       = p->ar[0];
   MYFLT *ar       = p->ar[1];
-  int32_t pos     = p->pos;
+  int64_t pos     = p->pos;
   uint32_t early  = p->h.insdshead->ksmps_no_end;
   uint32_t offset = p->h.insdshead->ksmps_offset;
   uint32_t i, n, nsmps = CS_KSMPS;
@@ -274,7 +273,7 @@ int32_t mp3len_(CSOUND *csound, MP3LEN *p, int32_t stringname)
   int32_t  r;
 
   /* open file */
-  mpa = mp3dec_init();
+  mpa = mp3dec_init(csound);
   if (UNLIKELY(!mpa)) {
     return csound->InitError(csound, "%s", Str("Not enough memory\n"));
   }
@@ -289,9 +288,8 @@ int32_t mp3len_(CSOUND *csound, MP3LEN *p, int32_t stringname)
     else csound->StringArg2Name(csound, name, p->iFileCode, "soundin.",0);
   }
   else strncpy(name, ((STRINGDAT *)p->iFileCode)->data, 1023);
-  if (UNLIKELY(csound->FileOpen(csound, &f, CSFILE_STD,
-                                        name, "rb", "SFDIR;SSDIR",
-                                        CSFTYPE_OTHER_BINARY, 0) == NULL)) {
+
+  if (UNLIKELY(mp3dec_open_file(mpa, name, &f) == NULL)) {
     mp3dec_uninit(mpa);
     return
       csound->InitError(csound,  Str("mp3in: %s: failed to open file"), name);
@@ -454,7 +452,7 @@ static int32_t sinit3_(CSOUND *csound, DATASPACE *p)
     clock_gettime(CLOCK_MONOTONIC, &ts);
     dtime = ts.tv_sec + 1e-9*ts.tv_nsec;*/
   name = ((STRINGDAT *)p->knum)->data;
-  p->mpa = mpa = mp3dec_init();
+  p->mpa = mpa = mp3dec_init(csound);
   if (UNLIKELY(!mpa)) {
     return csound->InitError(csound, "%s", Str("Not enough memory\n"));
   }
@@ -463,9 +461,8 @@ static int32_t sinit3_(CSOUND *csound, DATASPACE *p)
     p->mpa = NULL;
     return csound->InitError(csound, "%s", mp3dec_error(r));
   }
-  if (UNLIKELY(csound->FileOpen(csound, &f, CSFILE_STD,
-                                name, "rb", "SFDIR;SSDIR",
-                                CSFTYPE_OTHER_BINARY, 0) == NULL)) {
+
+  if (UNLIKELY(mp3dec_open_file(mpa, name, &f) == NULL)) {
     mp3dec_uninit(mpa);
     return
       csound->InitError(csound,  Str("mp3scale: %s: failed to open file"), name);
@@ -626,7 +623,7 @@ static int32_t sprocess3(CSOUND *csound, DATASPACE *p)
   MYFLT *tab, **table,frac;
   int32_t N = p->N, hsize = p->hsize, cnt = p->cnt;
   int32_t  nsmps = CS_KSMPS, n;
-  int32_t size = p->fdata[0].size/sizeof(MYFLT), post, i, j;
+  int32_t size = (int32_t) p->fdata[0].size/sizeof(MYFLT), post, i, j;
   double pos, spos = p->pos;
   MYFLT *fwin, *bwin;
   MYFLT in, *prev;
@@ -969,7 +966,7 @@ int32_t gen49raw(FGDATA *ff, FUNC *ftp)
   case 4:
     config.mode = MPADEC_CONFIG_CHANNEL2; break;
   }
-  mpa = mp3dec_init();
+  mpa = mp3dec_init(csound);
   if (UNLIKELY(!mpa)) {
     return csound->FtError(ff, "%s", Str("Not enough memory\n"));
   }
@@ -977,9 +974,7 @@ int32_t gen49raw(FGDATA *ff, FUNC *ftp)
     mp3dec_uninit(mpa);
     return csound->FtError(ff,"%s", mp3dec_error(r));
   }
-  (void)csound->FileOpen(csound, &f, CSFILE_STD,
-                         sfname, NULL, "SFDIR;SSDIR",
-                         CSFTYPE_UNKNOWN_AUDIO, 0);
+  (void)mp3dec_open_file(mpa, sfname, &f);
   //    fd = open(sfname, O_RDONLY); /* search paths */
   if (UNLIKELY(f < 0)) {
     mp3dec_uninit(mpa);
@@ -1039,7 +1034,7 @@ int32_t gen49raw(FGDATA *ff, FUNC *ftp)
     def = 1;
   }
   ftp->gen01args.sample_rate = mpainfo.frequency;
-  ftp->cvtbas = LOFACT * mpainfo.frequency * ftp->sr;
+  ftp->cvtbas = mpainfo.frequency * ftp->sr; 
   flen = ftp->flen;
   //printf("gen49: flen=%d size=%d bufsize=%d\n", flen, size, bufsize);
   while ((r == MP3DEC_RETCODE_OK) && bufused) {
@@ -1106,8 +1101,8 @@ PUBLIC NGFENS *csound_fgen_init(CSOUND *csound)                         \
 
 PUBLIC int32_t csoundModuleInfo(void)                                      
 {
-  return ((CS_APIVERSION << 16)
-          + (CS_APISUBVER << 8)
+  return ((CS_VERSION << 16)
+          + (CS_SUBVER << 8)
           + (int32_t) sizeof(MYFLT));
 }
 #endif

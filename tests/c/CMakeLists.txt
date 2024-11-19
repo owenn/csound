@@ -24,11 +24,6 @@ if(BUILD_TESTS)
         server_test.cpp
     )
 
-    # Required because we're compiling the tests written in C as C++
-    if(NOT MSVC)
-        target_compile_options(unittests PRIVATE "-fpermissive" "-Wwrite-strings")
-    endif()
-
     target_compile_features(unittests PUBLIC cxx_std_17)
 
     target_link_libraries(unittests

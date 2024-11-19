@@ -253,9 +253,9 @@ int32_t AuHAL_open(CSOUND *csound, const csRtAudioParams * parm,
       csound->Free(csound,b);
     }
 
-     OPARMS O;
-    csound->GetOParms(csound, &O);
-    if(O.msglevel || O.odebug) {
+    const OPARMS *O;
+    O = csound->GetOParms(csound) ;
+    if(O->msglevel || O->odebug) {
     if (isInput)
       csound->Message(csound,
                       Str("AuHAL Module: found %d input device(s):\n"), devins);
@@ -300,7 +300,7 @@ int32_t AuHAL_open(CSOUND *csound, const csRtAudioParams * parm,
                                      0, NULL, sizeof(AudioDeviceID), &dev);
         }
         else {
-       if(O.msglevel || O.odebug)
+       if(O->msglevel || O->odebug)
           csound->Warning(csound, Str("requested device %d out of range"),
                              devnum);
         }
@@ -318,7 +318,7 @@ int32_t AuHAL_open(CSOUND *csound, const csRtAudioParams * parm,
 
         }
         else {
-          if(O.msglevel || O.odebug)
+          if(O->msglevel || O->odebug)
           csound->Warning(csound, Str("requested device %d (%s) out of range"),
                              devnum, devinfo[CoreAudioDev].name);
         }
@@ -329,7 +329,7 @@ int32_t AuHAL_open(CSOUND *csound, const csRtAudioParams * parm,
       if(sysdevs[i] == dev){
         if(isInput) {
           if(devinfo[i].inchannels < parm->nChannels) {
-            if(O.msglevel || O.odebug)
+            if(O->msglevel || O->odebug)
             csound->ErrorMsg(csound,
                              Str(" *** CoreAudio: Device has not enough"
                                  " inputs (%d, requested %d)\n"),
@@ -340,7 +340,7 @@ int32_t AuHAL_open(CSOUND *csound, const csRtAudioParams * parm,
         }
         else {
           if(devinfo[i].outchannels < parm->nChannels) {
-            if(O.msglevel || O.odebug)
+            if(O->msglevel || O->odebug)
             csound->ErrorMsg(csound,
                              Str(" *** CoreAudio: Device has not enough"
                                  " outputs (%d, requested %d)\n"),
@@ -358,7 +358,7 @@ int32_t AuHAL_open(CSOUND *csound, const csRtAudioParams * parm,
     prop.mSelector = kAudioObjectPropertyName;
     AudioObjectGetPropertyData(dev,
                                &prop, 0, NULL, &psize, &devName);
-    if(O.msglevel || O.odebug) {
+    if(O->msglevel || O->odebug) {
     if(isInput)
       csound->Message(csound, Str("selected input device: %s\n"),
                       CFStringGetCStringPtr(devName, defaultEncoding));
@@ -372,11 +372,11 @@ int32_t AuHAL_open(CSOUND *csound, const csRtAudioParams * parm,
     cdata->sr = srate = parm->sampleRate;
     if(!isInput){
       nchnls =cdata->onchnls = parm->nChannels;
-      bufframes = csound->GetOutputBufferSize(csound)/nchnls;
+      bufframes = (uint32_t) (csound->GetOutputBufferSize(csound)/nchnls);
     }
     else {
       nchnls = cdata->inchnls = parm->nChannels;
-      bufframes = csound->GetInputBufferSize(csound)/nchnls;
+      bufframes =  (uint32_t) (csound->GetInputBufferSize(csound)/nchnls);
     }
 
     /* although the SR is set in the stream properties,
@@ -395,7 +395,7 @@ int32_t AuHAL_open(CSOUND *csound, const csRtAudioParams * parm,
     if(srate < 0)
       srate  =  csound->GetSystemSr(csound, sr);
     if(UNLIKELY(sr != srate)) {
-      if(O.msglevel || O.odebug)
+      if(O->msglevel || O->odebug)
        csound->Warning(csound,
                       Str("Attempted to set device SR, tried %.1f, got %.1f\n"),
                       srate, sr);
@@ -472,7 +472,7 @@ int32_t AuHAL_open(CSOUND *csound, const csRtAudioParams * parm,
       AudioUnitInitialize(*aunit);
       AudioOutputUnitStart(*aunit);
 
-      if(O.msglevel || O.odebug)
+      if(O->msglevel || O->odebug)
        csound->Message(csound,
                       Str("***** AuHAL module: output device open with %d "
                           "buffer frames\n"),
@@ -483,14 +483,14 @@ int32_t AuHAL_open(CSOUND *csound, const csRtAudioParams * parm,
       AURenderCallbackStruct input;
       AudioBufferList *CAInputData =
         (AudioBufferList*)csound->Malloc(csound,sizeof(UInt32)
-                                 + cdata->inchnls * sizeof(AudioBuffer));
+                                 + cdata->inchnls * sizeof(AudioBufferList));
       CAInputData->mNumberBuffers = cdata->inchnls;
       for (i = 0; i < cdata->inchnls; i++) {
         CAInputData->mBuffers[i].mNumberChannels = 1;
         CAInputData->mBuffers[i].mDataByteSize =
           bufframes * sizeof(Float32);
         CAInputData->mBuffers[i].mData =
-          csound->Calloc(csound,bufframes* sizeof(Float32));
+          csound->Calloc(csound,bufframes*sizeof(Float32));
       }
       cdata->inputdata = CAInputData;
 
@@ -500,7 +500,7 @@ int32_t AuHAL_open(CSOUND *csound, const csRtAudioParams * parm,
                            kAudioUnitScope_Input, isInput, &input, sizeof(input));
       AudioUnitInitialize(*aunit);
       AudioOutputUnitStart(*aunit);
-      if(O.msglevel || O.odebug)
+      if(O->msglevel || O->odebug)
        csound->Message(csound,
                       Str("***** AuHAL module: input device open with "
                           "%d buffer frames\n"),
@@ -867,9 +867,9 @@ static void rtclose_(CSOUND *csound)
       csound->DestroyCircularBuffer(csound, cdata->incb);
       csound->DestroyCircularBuffer(csound, cdata->outcb);
       csound->Free(csound,cdata);
-      OPARMS O;
-      csound->GetOParms(csound, &O);
-      if(O.msglevel || O.odebug)
+     const OPARMS *O;
+      O = csound->GetOParms(csound) ;
+      if(O->msglevel || O->odebug)
        csound->Message(csound, "%s", Str("AuHAL module: device closed\n"));
     }
 }
@@ -877,9 +877,9 @@ static void rtclose_(CSOUND *csound)
 int32_t csoundModuleInit(CSOUND *csound)
 {
     char   *drv;
-    OPARMS O;
-    csound->GetOParms(csound, &O);
-    csound->module_list_add(csound, "auhal", "audio");
+    const OPARMS *O;
+    O = csound->GetOParms(csound) ;
+    csound->ModuleListAdd(csound, "auhal", "audio");
     drv = (char *) csound->QueryGlobalVariable(csound, "_RTAUDIO");
     if (drv == NULL)
       return 0;
@@ -888,7 +888,7 @@ int32_t csoundModuleInit(CSOUND *csound)
           strcmp(drv, "coreaudio") == 0 || strcmp(drv, "CoreAudio") == 0 ||
           strcmp(drv, "COREAUDIO") == 0))
       return 0;
-   if(O.msglevel || O.odebug)
+   if(O->msglevel || O->odebug)
     csound->Message(csound, "%s", Str("rtaudio: coreaaudio-AuHAL module enabled\n"));
     csound->SetPlayopenCallback(csound, playopen_);
     csound->SetRecopenCallback(csound, recopen_);

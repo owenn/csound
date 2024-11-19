@@ -23,6 +23,7 @@
 */
 
 #include "csoundCore.h"     /*                              MEMFILES.C      */
+#include "soundfile.h"
 #include "soundio.h"
 #include "pvfileio.h"
 #include "convolve.h"
@@ -149,14 +150,14 @@ static int32_t Load_CV_File_(CSOUND *csound, const char *filnam,
       fclose(f);
       return csoundInitError(csound, Str("Ill-formed CV file\n"));
     }
-    cvh.headBsize = strtol(p, &p, 10);
-    cvh.dataBsize = strtol(p, &p, 10);
-    cvh.dataFormat = strtol(p, &p, 10);
+    cvh.headBsize = (int32_t) strtol(p, &p, 10);
+    cvh.dataBsize = (int32_t) strtol(p, &p, 10);
+    cvh.dataFormat = (int32_t) strtol(p, &p, 10);
     cvh.samplingRate = (MYFLT)cs_strtod(p, &p);
-    cvh.src_chnls = strtol(p, &p, 10);
-    cvh.channel = strtol(p, &p, 10);
-    cvh.Hlen = strtol(p, &p, 10);
-    cvh.Format = strtol(p, &p, 10);
+    cvh.src_chnls = (int32_t) strtol(p, &p, 10);
+    cvh.channel = (int32_t) strtol(p, &p, 10);
+    cvh.Hlen = (int32_t) strtol(p, &p, 10);
+    cvh.Format = (int32_t) strtol(p, &p, 10);
     /* fscanf(f, "%d %d %d %g %d %d %d %d\n",  */
     /*        &cvh.headBsize, &cvh.dataBsize, &cvh.dataFormat, */
     /*        &cvh.samplingRate, &cvh.src_chnls, &cvh.channel, */
@@ -620,7 +621,7 @@ SNDMEMFILE *csoundLoadSoundFile(CSOUND *csound, const char *fileName, void *sfi)
     if (UNLIKELY(fd == NULL)) {
       csound->ErrorMsg(csound,
                        Str("csoundLoadSoundFile(): failed to open '%s' %s"),
-                       fileName, Str(sflib_strerror(NULL)));
+                       fileName, Str(csound->SndfileStrError(csound,NULL)));
       return NULL;
     }
     p = (SNDMEMFILE*)
@@ -646,7 +647,7 @@ SNDMEMFILE *csoundLoadSoundFile(CSOUND *csound, const char *fileName, void *sfi)
     p->scaleFac = 1.0;
     {
       SFLIB_INSTRUMENT lpd;
-      if (sflib_command(sf, SFC_GET_INSTRUMENT, &lpd, sizeof(SFLIB_INSTRUMENT))
+      if (csound->SndfileCommand(csound,sf, SFC_GET_INSTRUMENT, &lpd, sizeof(SFLIB_INSTRUMENT))
           != 0) {
         if (lpd.loop_count > 0 && lpd.loops[0].mode != SF_LOOP_NONE) {
           /* set loop mode and loop points */
@@ -664,7 +665,7 @@ SNDMEMFILE *csoundLoadSoundFile(CSOUND *csound, const char *fileName, void *sfi)
         p->scaleFac = pow(10.0, (double) lpd.gain * 0.05);
       }
     }
-    if (UNLIKELY((size_t) sflib_readf_MYFLT(sf, &(p->data[0]), (sf_count_t) p->nFrames)
+    if (UNLIKELY((size_t) csound->SndfileRead(csound, sf, &(p->data[0]), (sf_count_t) p->nFrames)
                  != p->nFrames)) {
       csound->FileClose(csound, fd);
       csound->Free(csound, p->name);

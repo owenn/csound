@@ -42,10 +42,10 @@ PUBLIC int32_t csoundModuleCreate(CSOUND *csound)
 {
     pulse_globals *p;
     int32_t siz = 64;
-    OPARMS oparms;
-    csound->GetOParms(csound, &oparms);
+   const OPARMS *O;
+    O = csound->GetOParms(csound) ;
 
-    if (oparms.msglevel & 0x400)
+    if (O->msglevel & 0x400)
       csound->Message(csound, Str("PulseAudio client RT IO module for Csound"
                                   "by Victor Lazzarini\n"));
 
@@ -86,7 +86,7 @@ PUBLIC int32_t csoundModuleCreate(CSOUND *csound)
 
 PUBLIC int32_t csoundModuleInfo(void)
 {
-    return ((CS_APIVERSION << 16) + (CS_APISUBVER << 8) + (int32_t) sizeof(MYFLT));
+    return ((CS_VERSION << 16) + (CS_SUBVER << 8) + (int32_t) sizeof(MYFLT));
 }
 
 static int32_t pulse_playopen(CSOUND *csound, const csRtAudioParams *parm)
@@ -274,7 +274,7 @@ PUBLIC int32_t csoundModuleInit(CSOUND *csound)
     char    *s;
     int32_t     i;
     char    buf[9];
-    csound->module_list_add(csound, "pulse", "audio");
+    csound->ModuleListAdd(csound, "pulse", "audio");
     s = (char*) csound->QueryGlobalVariable(csound, "_RTAUDIO");
     i = 0;
     if (s != NULL) {

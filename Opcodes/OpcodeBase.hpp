@@ -495,8 +495,6 @@ namespace csound {
     }
   };
 
-#else
-#pragma message("Not defining heap_manager_t.")
 #endif
 
 }

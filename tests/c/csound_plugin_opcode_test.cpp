@@ -26,6 +26,7 @@ public:
     virtual void SetUp ()
     {
         csound = csoundCreate (NULL,NULL);
+        csoundSetOption(csound, "-odac");
     }
 
     virtual void TearDown ()

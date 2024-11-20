@@ -402,8 +402,9 @@ static int32_t pconvset_(CSOUND *csound, PCONVOLVE *p, int32_t stringname)
     return csound->InitError(csound, Str("channel request %d illegal"), channel);
   }
 
-  if (UNLIKELY((infd = csound->SndfileOpen(csound, sfname, SFM_READ, &IRinfo)) == NULL)) {
-    return csound->InitError(csound, "%s", Str("pconvolve: error while impulse file"));
+  if (UNLIKELY(csound->FileOpen(csound, &infd, CSFILE_SND_R, sfname, &IRinfo,
+                           "SFDIR;SSDIR;SADIR", CSFTYPE_UNKNOWN_AUDIO, 0) == NULL)) {
+    return csound->InitError(csound, "%s", Str("pconvolve: error while opening impulse file"));
   }
 
   if (UNLIKELY(IRinfo.frames < 0)) {

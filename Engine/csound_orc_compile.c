@@ -461,7 +461,7 @@ OPTXT *create_opcode(CSOUND *csound, TREE *root, INSTRTXT *ip,
  * Globals, unlike locals, keep their memory space
  * in separate blocks, pointed by var->memBlock
  */
-void addGlobalVariable(CSOUND *csound, ENGINE_STATE *engineState, CS_TYPE *type,
+CS_VARIABLE *addGlobalVariable(CSOUND *csound, ENGINE_STATE *engineState, CS_TYPE *type,
                        char *name, void *typeArg) {
   CS_VARIABLE *var =
     csoundCreateVariable(csound, csound->typePool, type, name, typeArg);
@@ -474,6 +474,7 @@ void addGlobalVariable(CSOUND *csound, ENGINE_STATE *engineState, CS_TYPE *type,
   if (var->initializeVariableMemory != NULL) {
     var->initializeVariableMemory((void *)csound, var, &varMem->value);
   }
+  return var;
 }
 
 void *find_or_add_constant(CSOUND *csound, CS_HASH_TABLE *constantsPool,
@@ -1430,23 +1431,10 @@ OPCODINFO *find_opcode_info(CSOUND *csound, char *opname, char *outargs,
   return NULL;
 }
 
-/**
-   Merge a new engineState into csound->engineState
-   1) Add to stringPool, constantsPool and varPool (globals)
-   2) Add to opinfo and UDOs
-   3) Call insert_instrtxt() on csound->engineState for each new instrument
-   4) Call insprep() and recalculateVarPoolMemory() for each new instrument
-   5) patch up nxtinstxt order
-*/
-int32_t engineState_merge(CSOUND *csound, ENGINE_STATE *engineState) {
-  int32_t i, end = engineState->maxinsno;
-  ENGINE_STATE *current_state = &csound->engineState;
-  INSTRTXT *current; 
+static void varPool_merge(CSOUND *csound, ENGINE_STATE *current_state,
+                          CS_VAR_POOL *varPool) {
   int32_t count = 0;
-  cs_hash_table_merge(csound, current_state->constantsPool,
-                      engineState->constantsPool);
-  
-  CS_VARIABLE *gVar = engineState->varPool->head;
+  CS_VARIABLE *gVar = varPool->head;
   while (gVar != NULL) {
     CS_VARIABLE *var;
     if (UNLIKELY(csound->oparms->odebug))
@@ -1466,7 +1454,7 @@ int32_t engineState_merge(CSOUND *csound, ENGINE_STATE *engineState) {
       /* when disposing of the engineState global vars, we do not
          delete the memBlock */
       var->memBlock = gVar->memBlock;
-      if (UNLIKELY(csound->oparms->odebug))
+       if (UNLIKELY(csound->oparms->odebug))
         csound->Message(csound, Str(" adding %p %d) %s:%s\n"), var, count,
                         gVar->varName, gVar->varType->varTypeName);
       gVar = gVar->next;
@@ -1479,12 +1467,27 @@ int32_t engineState_merge(CSOUND *csound, ENGINE_STATE *engineState) {
       gVar = gVar->next;
     }
   }
+}
 
+/**
+   Merge a new engineState into csound->engineState
+   1) Add to stringPool, constantsPool and varPool (globals)
+   2) Add to opinfo and UDOs
+   3) Call insert_instrtxt() on csound->engineState for each new instrument
+   4) Call insprep() and recalculateVarPoolMemory() for each new instrument
+   5) patch up nxtinstxt order
+*/
+int32_t engineState_merge(CSOUND *csound, ENGINE_STATE *engineState) {
+  int32_t i, end = engineState->maxinsno;
+  ENGINE_STATE *current_state = &csound->engineState;
+  INSTRTXT *current; 
+  cs_hash_table_merge(csound, current_state->constantsPool,
+                      engineState->constantsPool);
+  varPool_merge(csound, current_state, engineState->varPool);
   /* merge opcodinfo */
   insert_instrtxt(csound, engineState->instrtxtp[0], 0, current_state, 1);
   for (i = 1; i < end; i++) {
     current = engineState->instrtxtp[i];
-
     if (current != NULL) {
       if (current->insname == NULL) {
         if (csound->oparms->odebug)
@@ -1623,14 +1626,17 @@ PUBLIC int32_t csoundCompileTreeInternal(CSOUND *csound, TREE *root,
   char        *opname;
   TREE * current = root;
   ENGINE_STATE *engineState;
-  CS_VARIABLE* var;
+  CS_VARIABLE* var;  
   TYPE_TABLE* typeTable = (TYPE_TABLE*)current->markup;
+  CS_VAR_POOL *globalPool = csound->engineState.varPool;
 
   current = current->next;
   if (csound->instr0 == NULL) {
     engineState = &csound->engineState;
     engineState->varPool = typeTable->globalPool;
-
+    // now we merge existing global variables (i.e. created by the parser)
+    varPool_merge(csound, engineState, globalPool);
+    globalPool = engineState->varPool;
     csound->instr0 = create_instrument0(csound, current, engineState,
                                         typeTable->instr0LocalPool);
     cs_hash_table_put_key(csound, engineState->stringPool, "\"\"");
@@ -1645,7 +1651,6 @@ PUBLIC int32_t csoundCompileTreeInternal(CSOUND *csound, TREE *root,
     engineState = (ENGINE_STATE *) csound->Calloc(csound, sizeof(ENGINE_STATE));
     engineState->stringPool = csound->engineState.stringPool;
     engineState->constantsPool = cs_hash_table_create(csound);
-
     engineState->varPool = typeTable->globalPool;
     prvinstxt = &(engineState->instxtanchor);
     engineState->instrtxtp =
@@ -1678,7 +1683,6 @@ PUBLIC int32_t csoundCompileTreeInternal(CSOUND *csound, TREE *root,
 
 
   while (current != NULL) {
-
     switch (current->type) {
     case T_ASSIGNMENT:
       if(csound->GetDebug(csound))
@@ -1711,10 +1715,9 @@ PUBLIC int32_t csoundCompileTreeInternal(CSOUND *csound, TREE *root,
           instrtxt->insname = csound->Malloc(csound, strlen(c) + 1);
           strcpy(instrtxt->insname, c);
           // the parser has created a variable with the instrument name
-          // we now search for it and update its value to hold instrxt
           CS_VARIABLE *ivar = csoundFindVariableWithName(csound,
-                                                         csound->engineState.varPool,
-                                                         c);
+                                                         csound->engineState.varPool, c);
+          // set it
           if(ivar != NULL && ivar->varType == &CS_VAR_TYPE_INSTR) {
             INSTREF src = { instrtxt, 0 }, *dest = (INSTREF *) &(ivar->memBlock->value);
             ivar->varType->copyValue(csound, ivar->varType,
@@ -1744,9 +1747,9 @@ PUBLIC int32_t csoundCompileTreeInternal(CSOUND *csound, TREE *root,
                             engineState, 0);
           instrtxt->insname = csound->Malloc(csound, strlen(c) + 1);
           strcpy(instrtxt->insname, c);
-          CS_VARIABLE *ivar = csoundFindVariableWithName(csound,
-                                                         engineState->varPool,
-                                                         c);
+          // the parser has created a variable with the instrument name in globalPool
+          CS_VARIABLE *ivar = csoundFindVariableWithName(csound, globalPool, c);
+          // set it
           if(ivar != NULL && ivar->varType == &CS_VAR_TYPE_INSTR) {
             INSTREF src = { instrtxt, 0 }, *dest = (INSTREF *) &(ivar->memBlock->value);
             ivar->varType->copyValue(csound, ivar->varType,

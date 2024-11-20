@@ -304,15 +304,9 @@ CS_VARIABLE* find_var_from_pools(CSOUND* csound, char* varName,
     var = csoundFindVariableWithName(csound, typeTable->localPool,
                                      varBaseName);
     // then check for global variables that may have been explicitly defined
-    if(var == NULL) {
+    if(var == NULL) 
     var = csoundFindVariableWithName(csound, csound->engineState.varPool,
                                      varBaseName);
-     if(var && var->varType == &CS_VAR_TYPE_INSTR) 
-             // the instr name variable exists in the engine varpool
-             // we now add it to the globalPool so that the compiler
-             // can find it and assign a value to it (compileTreeInternal)
-             csoundAddVariable(csound, typeTable->globalPool, var);
-    }
     if(var == NULL)
       var = csoundFindVariableWithName(csound, typeTable->globalPool,
                                        varBaseName);
@@ -3345,19 +3339,21 @@ char tree_argtyp(CSOUND *csound, TREE *tree) {
   return argtyp2( tree->value->lexeme);
 }
 
+
+CS_VARIABLE *addGlobalVariable(CSOUND *csound, ENGINE_STATE *engineState,
+                               CS_TYPE *type, char *name, void *typeArg);
+
 void add_instr_variable(CSOUND *csound,  TREE *x) {
   /* add instr variable to engine varpool 
      called by bison when instr ids are found
   */
   if (x->type == T_IDENT) {
-    int32_t ret;
+    
     char *varname = x->value->lexeme;
-    CS_VARIABLE *var = csoundCreateVariable(csound, csound->typePool,
-                                           &CS_VAR_TYPE_INSTR, varname,
+    CS_VARIABLE *var = addGlobalVariable(csound, &csound->engineState,
+                                         (CS_TYPE*)&CS_VAR_TYPE_INSTR, varname,
                                            NULL);
-    // Create the variable in the engine varPool
-    ret = csoundAddVariable(csound, csound->engineState.varPool, var);
-    if(ret != 0)
+    if(var == NULL)
       csound->Warning(csound, "Could not add instrument ref %s", varname);
   }
 }

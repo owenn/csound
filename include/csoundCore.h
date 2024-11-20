@@ -1430,6 +1430,9 @@ static inline double PHMOD1(double p) {
     int32 (*StringArg2Insno)(CSOUND *, void *p, int32_t is_string);
     char *(*StringArg2Name)(CSOUND *, char *, void *, const char *, int32_t);
     const CS_TYPE *(*GetType)(CSOUND *csound, const char *type);
+    TYPE_POOL *(*GetTypePool)(CSOUND* csound);
+    int32_t (*AddVariableType)(CSOUND* csound, TYPE_POOL* pool,
+                                   CS_TYPE* typeInstance);
 
     /**@}*/
 

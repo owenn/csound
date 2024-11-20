@@ -429,11 +429,13 @@ static const CSOUND cenviron_ = {
   csoundGetMessageLevel,
   csoundSetMessageLevel,
   csoundSetMessageCallback,
-  /* arguments to opcodes */
+  /* arguments to opcodes and types*/
   get_arg_string,
   strarg2insno,
   strarg2name,
   GetType,
+  csoundGetTypePool,
+  csoundAddVariableType,
   /* memory allocation */
   csoundAuxAlloc,
   csoundAuxAllocAsync,

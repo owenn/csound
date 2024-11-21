@@ -456,6 +456,7 @@ static const char *errmsg_1 =
 static const char *errmsg_2 =
   Str_noop("event: string name is allowed only for \"i\", \"d\", and \"q\" events");
 
+int32_t instr_num(CSOUND *csound, INSTRTXT *instr);
 int32_t eventOpcode_(CSOUND *csound, LINEVENT *p, int32_t insname, char p1)
 {
     EVTBLK  evt;
@@ -479,13 +480,22 @@ int32_t eventOpcode_(CSOUND *csound, LINEVENT *p, int32_t insname, char p1)
 
     /* IV - Oct 31 2002: allow string argument */
     if (evt.pcnt > 0) {
-      if (insname) {
+      if (insname == 1) {
         MYFLT res;
         if (UNLIKELY(evt.opcod != 'i' && evt.opcod != 'q' && opcod != 'd'))
           return csound->PerfError(csound, &(p->h), "%s", Str(errmsg_2));
         res = named_instr_find(csound, ((STRINGDAT *)p->args[1])->data);
         if (UNLIKELY(res == FL(0.0))) return NOTOK;
         evt.p[1] = res;
+        evt.strarg = NULL; evt.scnt = 0;
+      }
+      else if (insname == 2) {
+        int32_t res;
+        INSTREF *ref = (INSTREF *) p->args[1];
+        if (UNLIKELY(evt.opcod != 'i' && evt.opcod != 'q' && opcod != 'd'))
+          return csound->InitError(csound, "%s", Str(errmsg_2));
+        res = instr_num(csound, ref->instr);
+        evt.p[1] = (MYFLT)res;
         evt.strarg = NULL; evt.scnt = 0;
       }
       else {
@@ -500,7 +510,7 @@ int32_t eventOpcode_(CSOUND *csound, LINEVENT *p, int32_t insname, char p1)
           if (UNLIKELY((opcod == 'i' || opcod == 'd') && (insno ==0 ||
                        insno > csound->engineState.maxinsno ||
                        !csound->engineState.instrtxtp[(int)insno]))) {
-            csound->Message(csound, Str("WARNING: Cannot Find Instrument %d. No action."),
+            csound->Message(csound, Str("Cannot Find Instrument %d. No action.\n"),
                            (int32_t) insno);
             return OK;
           }
@@ -538,10 +548,14 @@ int32_t eventOpcode_S(CSOUND *csound, LINEVENT *p)
     return eventOpcode_(csound, p, 1, 0);
 }
 
+int32_t eventOpcode_Instr(CSOUND *csound, LINEVENT *p)
+{
+    return eventOpcode_(csound, p, 2, 0);
+}
+
 
 
 /* i-time version of event opcode */
-
 int32_t eventOpcodeI_(CSOUND *csound, LINEVENT *p, int32_t insname, char p1)
 {
     EVTBLK  evt;
@@ -563,7 +577,7 @@ int32_t eventOpcodeI_(CSOUND *csound, LINEVENT *p, int32_t insname, char p1)
       evt.pcnt = p->INOCOUNT - 1;
     /* IV - Oct 31 2002: allow string argument */
     if (evt.pcnt > 0) {
-      if (insname) {
+      if (insname == 1) {
         MYFLT res;
         res = named_instr_find(csound, ((STRINGDAT *)p->args[1])->data);
         if (UNLIKELY(res == FL(0.0))) return NOTOK;
@@ -571,6 +585,17 @@ int32_t eventOpcodeI_(CSOUND *csound, LINEVENT *p, int32_t insname, char p1)
         evt.strarg = NULL; evt.scnt = 0;
         for (i = 2; i <= evt.pcnt; i++)
            evt.p[i] = *p->args[i];
+      }
+      else if (insname == 2) {
+        int32_t res;
+        INSTREF *ref = (INSTREF *) p->args[1];
+        if (UNLIKELY(evt.opcod != 'i' && evt.opcod != 'q' && opcod != 'd'))
+          return csound->InitError(csound, "%s", Str(errmsg_2));
+        res = instr_num(csound, ref->instr);
+        evt.p[1] = (MYFLT)res;
+        evt.strarg = NULL; evt.scnt = 0;
+        for (i = 2; i <= evt.pcnt; i++)
+          evt.p[i] = *p->args[i];
       }
       else {
         evt.strarg = NULL; evt.scnt = 0;
@@ -585,7 +610,7 @@ int32_t eventOpcodeI_(CSOUND *csound, LINEVENT *p, int32_t insname, char p1)
           if (UNLIKELY((opcod == 'i' || opcod == 'd') && (insno ==0 ||
                        insno > csound->engineState.maxinsno ||
                        !csound->engineState.instrtxtp[(int)insno]))) {
-            csound->Message(csound, Str("WARNING: Cannot Find Instrument %d. No action."),
+            csound->Message(csound, Str("Cannot Find Instrument %d. No action.\n"),
                            (int32_t) insno);
             return OK;
           }
@@ -629,6 +654,11 @@ int32_t eventOpcodeI_S(CSOUND *csound, LINEVENT *p)
     return eventOpcodeI_(csound, p, 1, 0);
 }
 
+int32_t eventOpcodeI_Instr(CSOUND *csound, LINEVENT *p)
+{
+    return eventOpcodeI_(csound, p, 2, 0);
+}
+
 int32_t instanceOpcode_(CSOUND *csound, LINEVENT2 *p, int32_t insname)
 {
     EVTBLK  evt;
@@ -644,7 +674,14 @@ int32_t instanceOpcode_(CSOUND *csound, LINEVENT2 *p, int32_t insname)
     /* IV - Oct 31 2002: allow string argument */
     if (evt.pcnt > 0) {
       int32_t res;
-      if (insname) {
+      if (insname == 2) {
+        int32_t res;
+        INSTREF *ref = (INSTREF *) p->args[1];
+        res = instr_num(csound, ref->instr);
+        evt.p[1] = (MYFLT)res;
+        evt.strarg = NULL; evt.scnt = 0;
+      }
+      else if (insname == 1) {
         res = csound->StringArg2Insno(csound,
                                    ((STRINGDAT*) p->args[0])->data, 1);
         /* The comprison below and later is suspect */
@@ -679,4 +716,9 @@ int32_t instanceOpcode(CSOUND *csound, LINEVENT2 *p)
 int32_t instanceOpcode_S(CSOUND *csound, LINEVENT2 *p)
 {
     return instanceOpcode_(csound, p, 1);
+}
+
+int32_t instanceOpcode_Instr(CSOUND *csound, LINEVENT2 *p)
+{
+    return instanceOpcode_(csound, p, 2);
 }

@@ -672,7 +672,7 @@ int32_t instanceOpcode_(CSOUND *csound, LINEVENT2 *p, int32_t insname)
     if(csoundGetTypeForArg(p->inst) != &CS_VAR_TYPE_INSTANCE)
       evt.pinstance = (void *) p->inst;
     else
-      evt.pinstance = (void *) ((INSTANCEREF *) p)->instance;
+      evt.pinstance = (void *) ((INSTANCEREF *) p->inst)->instance;
 
     
     /* IV - Oct 31 2002: allow string argument */

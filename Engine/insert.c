@@ -1035,7 +1035,13 @@ static void deact(CSOUND *csound, INSDS *ip)
 
 
 int32_t kill_instance(CSOUND *csound, KILLOP *p) {
-  if (LIKELY(*p->inst)) xturnoff(csound, (INSDS *) ((uintptr_t)*p->inst));
+  INSDS *insds;
+  if(csoundGetTypeForArg(p->inst) != &CS_VAR_TYPE_INSTANCE)
+    insds = (INSDS *) p->inst;
+    else
+     insds = ((INSTANCEREF *) p->inst)->instance;
+
+  if (LIKELY(insds)) xturnoff(csound, insds);
   else csound->Warning(csound, Str("instance not valid\n"));
   return OK;
 }

@@ -979,6 +979,7 @@ OENTRY opcodlst_1[] = {
   { "nstance.S", S(LINEVENT2),0,   ":Instr;",  "Siim",  instanceOpcode_S, NULL, NULL},
   { "turnoff.i", S(KILLOP),0,     "",     "i", kill_instance, NULL, NULL  },
   { "turnoff.k", S(KILLOP),0,      "",     "k", NULL, kill_instance, NULL},
+  { "turnoff.inst", S(KILLOP),0,      "",     "Instr;", kill_instance, NULL, NULL},
   { "lfo", S(LFO),0,              "k",    "kko",  lfoset,   lfok,   NULL   },
   { "lfo.a", S(LFO),0,              "a",    "kko",  lfoset,   lfoa    },
   { "oscils",   S(OSCILS),0,      "a", "iiio",

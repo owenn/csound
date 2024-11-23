@@ -162,6 +162,11 @@ void instrRef_copy_value(CSOUND* csound, const CS_TYPE* cstype, void* dest,
                        p->instr->insname);
 }
 
+void instanceRef_copy_value(CSOUND* csound, const CS_TYPE* cstype, void* dest,
+                      const void* src, OPDS *ctx) {
+  memcpy(dest, src, sizeof(INSTANCEREF));
+}
+
 
 /* MEM SIZE UPDATING FUNCTIONS */
 void updateAsigMemBlock(CSOUND* csound, CS_VARIABLE* var) {
@@ -294,6 +299,14 @@ CS_VARIABLE* createInstrRef(void* csnd, void* p, OPDS *ctx) {
    return var;
 }
 
+CS_VARIABLE* createInstanceRef(void* csnd, void* p, OPDS *ctx) {
+   CSOUND* csound = (CSOUND*)csnd;
+   CS_VARIABLE* var = csound->Calloc(csound, sizeof (CS_VARIABLE));
+   var->memBlockSize = CS_FLOAT_ALIGN(sizeof(INSTANCEREF));
+   var->initializeVariableMemory = &varInitMemory;
+   return var;
+}
+
 
 /* FREE VAR MEM FUNCTIONS */
 void string_free_var_mem(void* csnd, void* p ) {
@@ -385,10 +398,14 @@ const CS_TYPE CS_VAR_TYPE_ARRAY = {
   array_free_var_mem, NULL, 0
 };
 
-
 const CS_TYPE CS_VAR_TYPE_INSTR = {
   "InstrDef", "instrument definition reference", CS_ARG_TYPE_BOTH,
   createInstrRef, instrRef_copy_value, NULL, NULL, 0
+};
+
+const CS_TYPE CS_VAR_TYPE_INSTANCE = {
+  "Instr", "instrument instance reference", CS_ARG_TYPE_BOTH,
+  createInstanceRef, instanceRef_copy_value, NULL, NULL, 0
 };
 
 const CS_TYPE CS_VAR_TYPE_COMPLEX = {
@@ -413,6 +430,7 @@ void csoundAddStandardTypes(CSOUND* csound, TYPE_POOL* pool) {
     csoundAddVariableType(csound, pool, (CS_TYPE*)&CS_VAR_TYPE_b);
     csoundAddVariableType(csound, pool, (CS_TYPE*)&CS_VAR_TYPE_ARRAY);
     csoundAddVariableType(csound, pool, (CS_TYPE*)&CS_VAR_TYPE_INSTR);
+    csoundAddVariableType(csound, pool, (CS_TYPE*)&CS_VAR_TYPE_INSTANCE);
 }
 
 

@@ -493,6 +493,13 @@ static const uint32_t PHMASK = (1 << 24) - 1;
     MYFLT imag;
     int32_t isPolar;
   } COMPLEXDAT;
+
+  /* 
+  * Type definition for instr instance ref
+  */
+  typedef struct instanceref {
+    struct insds *instance;
+  } INSTANCEREF;
   
   typedef struct monblk {
     int16   pch;

@@ -658,19 +658,23 @@ int32_t eventOpcodeI_Instr(CSOUND *csound, LINEVENT *p)
 {
     return eventOpcodeI_(csound, p, 2, 0);
 }
+#include "csound_standard_types.h"
 
 int32_t instanceOpcode_(CSOUND *csound, LINEVENT2 *p, int32_t insname)
 {
     EVTBLK  evt;
     int32_t     i;
-
     evt.strarg = NULL; evt.scnt = 0;
     evt.opcod = 'i';
     evt.pcnt = p->INOCOUNT;
 
        /* pass in the memory to hold the instance after insertion */
-    evt.pinstance = (void *) p->inst;
+    if(csoundGetTypeForArg(p->inst) != &CS_VAR_TYPE_INSTANCE)
+      evt.pinstance = (void *) p->inst;
+    else
+      evt.pinstance = (void *) ((INSTANCEREF *) p)->instance;
 
+    
     /* IV - Oct 31 2002: allow string argument */
     if (evt.pcnt > 0) {
       int32_t res;

@@ -856,7 +856,7 @@ static const CSOUND cenviron_ = {
   FL(0.0), FL(0.0), FL(0.0),  /*  prvbt, curbt, nxtbt */
   FL(0.0), FL(0.0),       /*  curp2, nxtim        */
   0,              /*  cyclesRemaining     */
-  { 0, NULL, NULL, '\0', 0, FL(0.0),
+  { 0, NULL, NULL, 0, '\0', 0, FL(0.0),
     FL(0.0), { FL(0.0) }, {NULL}},   /*  evt */
   NULL,           /*  memalloc_db         */
   (MGLOBAL*) NULL, /* midiGlobals         */
@@ -910,7 +910,7 @@ static const CSOUND cenviron_ = {
     NULL, NULL,   /* Linep, Linebufend    */
     0,            /* stdmode              */
     {
-      0, NULL, NULL, 0, 0, FL(0.0), FL(0.0), { FL(0.0) },
+      0, NULL, NULL, 0, 0, 0, FL(0.0), FL(0.0), { FL(0.0) },
       {NULL},
     },            /* EVTBLK  prve         */
     NULL,        /* Linebuf              */
@@ -1844,7 +1844,7 @@ int32_t kperf_nodebug(CSOUND *csound)
     else {
       int32_t done;
       double time_end = (csound->ksmps+csound->icurTime)/csound->esr;
-
+      
       while (ip != NULL) {              /* for each instr active:  */
         INSDS *nxt = ip->nxtact;
         if (UNLIKELY(csound->oparms->sampleAccurate &&
@@ -1914,21 +1914,24 @@ int32_t kperf_nodebug(CSOUND *csound)
             }
           }
         }
-        /*else csound->Message(csound, "time %f\n",
-          csound->kcounter/csound->ekr);*/
+        //printf("%p \n", ip); 
+        /* else csound->Message(csound, "time %f\n",
+           csound->kcounter/csound->ekr);*/
         ip->ksmps_offset = 0; /* reset sample-accuracy offset */
         ip->ksmps_no_end = 0; /* reset end of loop samples */
-        if(nxt == NULL)
+        if(nxt == NULL) {
           ip = ip->nxtact;
         /* VL 13.04.21 this allows for deletions to operate
            correctly on the active
            list at perf time
            this allows for turnoff2 to work correctly
         */
-        else
+        }
+        else {
           ip = nxt; /* now check again if there is nothing nxt
                        in the chain making sure turnoff also
                        works */
+        }
       }
     }
   }

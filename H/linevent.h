@@ -43,4 +43,7 @@ typedef struct {
     int32_t argno;
 } LINEVENT2;
 
+
+int32_t play_instr(CSOUND *csound, LINEVENT2 *p);
+
 #endif      /* CSOUND_LINEVENT_H */

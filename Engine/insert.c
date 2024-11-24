@@ -107,6 +107,7 @@ static void no_op(CSOUND *csound, int32_t attr,
 /* do init pass for this instr */
 static int32_t init_pass(CSOUND *csound, INSDS *ip) {
   int32_t error = 0;
+  OPDS *ids = csound->ids;
   if(csound->oparms->realtime)
     csoundLockMutex(csound->init_pass_threadlock);
   csound->curip = ip;
@@ -120,6 +121,7 @@ static int32_t init_pass(CSOUND *csound, INSDS *ip) {
     error = (*csound->ids->init)(csound, csound->ids);
   }
   csound->mode = 0;
+  csound->ids = ids;
   if(csound->oparms->realtime)
     csoundUnlockMutex(csound->init_pass_threadlock);
   return error;
@@ -348,7 +350,7 @@ int32_t insert_event(CSOUND *csound, int32_t insno, EVTBLK *newevtp)
   INSDS     *ip, *prvp, *nxtp;
   OPARMS    *O = csound->oparms;
   CS_VAR_MEM *pfields = NULL;        /* *** was uninitialised *** */
-  int32_t tie=0, i;
+  int32_t   tie = 0, i;
   int32_t  n, error = 0;
   MYFLT  *flp, *fep;
   MYFLT newp1 = 0;
@@ -365,7 +367,6 @@ int32_t insert_event(CSOUND *csound, int32_t insno, EVTBLK *newevtp)
                       insno, csound->icurTime);
   }
   csound->inerrcnt = 0;
-
 
   tp = csound->engineState.instrtxtp[insno];
   if (UNLIKELY(tp->muted == 0)) {
@@ -398,17 +399,19 @@ int32_t insert_event(CSOUND *csound, int32_t insno, EVTBLK *newevtp)
   if (csound->engineState.instrtxtp[insno]->insname && newevtp->strarg)
     newp1 = named_instr_find(csound, newevtp->strarg);
 
-  newevtp->p[1] = newp1 != 0 ? newp1 : newevtp->p[1] ;
+  newevtp->p[1] = newp1 != 0 ? newp1 : newevtp->p[1];
+  /* if we allow tied events (default behaviour) */
+  if(newevtp->suppress_tie == 0) {
   /* if find this insno, active, with indef (tie) & matching p1 */
   for (ip = tp->instance; ip != NULL; ip = ip->nxtinstance) {
     if (ip->actflg && ip->offtim < 0.0 && ip->p1.value == newevtp->p[1]) {
       csound->tieflag++;
       ip->tieflag = 1;
       tie = 1;
-      /* goto init; */ /*     continue that event */
       break;
     }
-  }
+   }
+  } /* otherwise always use new instance */
 
   if(!tie) {
     /* alloc new dspace if needed */
@@ -459,7 +462,6 @@ int32_t insert_event(CSOUND *csound, int32_t insno, EVTBLK *newevtp)
     ip->tieflag = 0;
     ip->actflg++;                   /*    and mark the instr active */
   }
-
 
   /* init: */
   pfields = (CS_VAR_MEM*)&ip->p0;
@@ -608,7 +610,8 @@ int32_t insert_event(CSOUND *csound, int32_t insno, EVTBLK *newevtp)
     showallocs(csound);
   }
   if (newevtp->pinstance != NULL) {
-    *((MYFLT *)newevtp->pinstance) = (MYFLT) ((uintptr_t) ip);
+    /* pass on the instance to an output variable */
+    *((INSDS **)newevtp->pinstance) = ip;
   }
   return 0;
 }
@@ -972,6 +975,7 @@ void deinit_pass(CSOUND *csound, INSDS *ip) {
 static void deact(CSOUND *csound, INSDS *ip)
 {                               /* unlink single instr from activ chain */
   INSDS  *nxtp;               /*      and mark it inactive            */
+
   /* do deinit pass */
   deinit_pass(csound, ip);
   /* remove an active instrument */
@@ -1016,7 +1020,7 @@ static void deact(CSOUND *csound, INSDS *ip)
       csound->Message(csound, Str("removed instance of instr %s\n"), name);
     else
       csound->Message(csound, Str("removed instance of instr %d\n"), ip->insno);
-  }
+   }
   /* IV - Oct 24 2002: ip->prvact may be NULL, so need to check */
   if (ip->prvact && (nxtp = ip->prvact->nxtact = ip->nxtact) != NULL) {
     nxtp->prvact = ip->prvact;
@@ -1035,15 +1039,23 @@ static void deact(CSOUND *csound, INSDS *ip)
 
 
 int32_t kill_instance(CSOUND *csound, KILLOP *p) {
-  INSDS *insds;
-  if(csoundGetTypeForArg(p->inst) != &CS_VAR_TYPE_INSTANCE)
-    insds = (INSDS *) p->inst;
-    else
-     insds = ((INSTANCEREF *) p->inst)->instance;
-
-  if (LIKELY(insds)) xturnoff(csound, insds);
+  INSDS *insds = (INSDS *) ((uintptr_t)*p->inst);
+  if(insds->actflg == 0) return OK;
+  if (LIKELY(*p->inst)) xturnoff(csound, insds);
   else csound->Warning(csound, Str("instance not valid\n"));
   return OK;
+}
+
+
+int32_t kill_instancek(CSOUND *csound, KILLOP *p) {
+  int32_t res = OK;
+  if((int32_t) *p->ktrig != 0)
+    res = kill_instance(csound, p);
+  if (!p->h.insdshead->actflg) {  /* if current note was deactivated: */
+      while (CS_PDS->nxtp != NULL)
+        CS_PDS = CS_PDS->nxtp;    /* loop to last opds */
+  }
+  return res;
 }
 
 /* Turn off a particular insalloc, also remove from list of active */
@@ -1052,6 +1064,7 @@ int32_t kill_instance(CSOUND *csound, KILLOP *p) {
 void xturnoff(CSOUND *csound, INSDS *ip)  /* turnoff a particular insalloc  */
 {                                         /* called by inexclus on ctrl 111 */
   MCHNBLK *chn;
+
   if (UNLIKELY(ip->relesing))
     return;                             /* already releasing: nothing to do */
 

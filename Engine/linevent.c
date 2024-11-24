@@ -668,11 +668,8 @@ int32_t instanceOpcode_(CSOUND *csound, LINEVENT2 *p, int32_t insname)
     evt.opcod = 'i';
     evt.pcnt = p->INOCOUNT;
 
-       /* pass in the memory to hold the instance after insertion */
-    if(csoundGetTypeForArg(p->inst) != &CS_VAR_TYPE_INSTANCE)
-      evt.pinstance = (void *) p->inst;
-    else
-      evt.pinstance = (void *) ((INSTANCEREF *) p->inst)->instance;
+     /* pass in the memory to hold the instance after insertion */
+    evt.pinstance = (void *) p->inst;
 
     
     /* IV - Oct 31 2002: allow string argument */
@@ -680,7 +677,7 @@ int32_t instanceOpcode_(CSOUND *csound, LINEVENT2 *p, int32_t insname)
       int32_t res;
       if (insname == 2) {
         int32_t res;
-        INSTREF *ref = (INSTREF *) p->args[1];
+        INSTREF *ref = (INSTREF *) p->args[0];
         res = instr_num(csound, ref->instr);
         evt.p[1] = (MYFLT)res;
         evt.strarg = NULL; evt.scnt = 0;
@@ -688,7 +685,6 @@ int32_t instanceOpcode_(CSOUND *csound, LINEVENT2 *p, int32_t insname)
       else if (insname == 1) {
         res = csound->StringArg2Insno(csound,
                                    ((STRINGDAT*) p->args[0])->data, 1);
-        /* The comprison below and later is suspect */
         if (UNLIKELY(evt.p[1] == (MYFLT) NOT_AN_INSTRUMENT)) return NOTOK;
         evt.p[1] = (MYFLT)res;
         evt.strarg = NULL; evt.scnt = 0;
@@ -705,9 +701,10 @@ int32_t instanceOpcode_(CSOUND *csound, LINEVENT2 *p, int32_t insname)
       for (i = 2; i <= evt.pcnt; i++)
         evt.p[i] = *p->args[i-1];
     }
-    if (insert_score_event_at_sample(csound, &evt, csound->icurTime) != 0)
-      return csound->PerfError(csound, &(p->h),
-                               Str("instance: error creating event"));
+      if (insert_score_event_at_sample(csound, &evt, csound->icurTime) != 0) {
+        csound->Message(csound, Str("instance: error creating event\n"));
+        return NOTOK;
+      }
 
     return OK;
 }
@@ -725,4 +722,28 @@ int32_t instanceOpcode_S(CSOUND *csound, LINEVENT2 *p)
 int32_t instanceOpcode_Instr(CSOUND *csound, LINEVENT2 *p)
 {
     return instanceOpcode_(csound, p, 2);
+}
+
+
+int32_t insert(CSOUND *, int32_t, EVTBLK *);
+
+int32_t play_instr(CSOUND *csound, LINEVENT2 *p) {
+   EVTBLK  evt;
+   int32_t res, i;
+   INSTREF *ref = (INSTREF *) p->args[0];
+   res = instr_num(csound, ref->instr);
+   evt.strarg = NULL; evt.scnt = 0;
+   evt.opcod = 'i';
+   evt.pcnt = p->INOCOUNT + 2;
+   evt.p[1] = FL(res);
+   evt.p[2] = FL(0.0);
+   evt.p[3] = -1;
+   for (i = 4; i <= evt.pcnt; i++)
+        evt.p[i] = *p->args[i-3];
+   // pass on the var to hold the instance
+   evt.pinstance = (void *) p->inst;
+   // suppress ties so that each event makes a different instance
+   evt.suppress_tie = 1;
+   insert(csound, res, &evt); 
+   return OK;
 }

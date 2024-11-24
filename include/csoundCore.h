@@ -394,7 +394,7 @@ static const uint32_t PHMASK = (1 << 24) - 1;
     int32_t     active;                 /* To count activations for control */
     int32_t     pending_release;        /* To count instruments in release phase */
     int32_t     maxalloc;
-    int32_t     turnoff_mode;       /* Optionally turnoff instruments instances above maxalloc*/
+    int32_t     turnoff_mode;    /* Optionally turnoff instruments instances above maxalloc*/
     MYFLT   cpuload;                /* % load this instrumemnt makes */
     struct opcodinfo *opcode_info;  /* UDO info (when instrs are UDOs) */
     char    *insname;               /* instrument name */
@@ -568,8 +568,10 @@ static const uint32_t PHMASK = (1 << 24) - 1;
     /** String argument(s) (NULL if none) */
     int32_t     scnt;
     char    *strarg;
-    /* instance pointer */
-    void  *pinstance;  /* used in nstance opcode */
+    /* INSDS instance pointer */
+    void  *pinstance;
+    /* suppress ties, add new instance for event */
+    int32_t suppress_tie;
     /** Event type */
     char    opcod;
     /** Number of p-fields */

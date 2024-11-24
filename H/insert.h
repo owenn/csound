@@ -58,7 +58,10 @@ typedef struct {
 typedef struct {
     OPDS    h;
     MYFLT  *inst;
+    MYFLT  *ktrig;
 } KILLOP;
+
+int32_t kill_instancek(CSOUND *csound, KILLOP *p);
 
 
 /* the number of optional outputs defined in entry.c */

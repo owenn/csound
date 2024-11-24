@@ -5,7 +5,7 @@
 <CsInstruments>
 
 opcode assert(g:InstrDef,h:InstrDef):void
-if nstrnum(g) != nstrnum(h) then
+if instrnum(g) != instrnum(h) then
   prints "assert error for instrument number\n"
   exitnow(-1)
 endif

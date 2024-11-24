@@ -401,17 +401,21 @@ int32_t insert_event(CSOUND *csound, int32_t insno, EVTBLK *newevtp)
 
   newevtp->p[1] = newp1 != 0 ? newp1 : newevtp->p[1];
   /* if we allow tied events (default behaviour) */
+  int32_t suppress_tie = 0;
   if(newevtp->suppress_tie == 0) {
-  /* if find this insno, active, with indef (tie) & matching p1 */
+  /* if find this insno, active, with indef (tie) & matching p1 
+     and tie was not suppressed */
+  suppress_tie = 0;  // turn off tie suppression for this ip
   for (ip = tp->instance; ip != NULL; ip = ip->nxtinstance) {
-    if (ip->actflg && ip->offtim < 0.0 && ip->p1.value == newevtp->p[1]) {
+    if (ip->actflg && ip->offtim < 0.0 && ip->suppress_tie == 0
+        && ip->p1.value == newevtp->p[1]) {
       csound->tieflag++;
       ip->tieflag = 1;
       tie = 1;
       break;
     }
    }
-  } /* otherwise always use new instance */
+  } else suppress_tie = 1;
 
   if(!tie) {
     /* alloc new dspace if needed */
@@ -444,6 +448,7 @@ int32_t insert_event(CSOUND *csound, int32_t insno, EVTBLK *newevtp)
     ip->onedkr = csound->onedkr;
     ip->kicvt = csound->kicvt;
     ip->pds = NULL;
+    ip->suppress_tie = suppress_tie;
     /* Add an active instrument */
     tp->active++;
     tp->instcnt++;
@@ -609,9 +614,9 @@ int32_t insert_event(CSOUND *csound, int32_t insno, EVTBLK *newevtp)
       csound->Message(csound, Str("instr %d now active:\n"), insno);
     showallocs(csound);
   }
-  if (newevtp->pinstance != NULL) {
-    /* pass on the instance to an output variable */
-    *((INSDS **)newevtp->pinstance) = ip;
+  if (newevtp->pinstance != NULL) {       
+    /* place instance on output var memory */
+    memcpy(newevtp->pinstance, &ip, sizeof(INSDS *));    
   }
   return 0;
 }
@@ -1025,12 +1030,15 @@ static void deact(CSOUND *csound, INSDS *ip)
   if (ip->prvact && (nxtp = ip->prvact->nxtact = ip->nxtact) != NULL) {
     nxtp->prvact = ip->prvact;
   }
-  ip->actflg = 0;
-  /* link into free instance chain */
-  /* This also destroys ip->nxtact causing loops */
-  if (csound->engineState.instrtxtp[ip->insno] == ip->instr){
-    ip->nxtact = csound->engineState.instrtxtp[ip->insno]->act_instance;
-    csound->engineState.instrtxtp[ip->insno]->act_instance = ip;
+  if(ip->actflg != 0) {
+    /*  prevent a loop in kperf() in case deact() is called on 
+        an inactive instance */
+    ip->actflg = 0;
+     /* link into free instance chain so that it can be reused */
+    if (csound->engineState.instrtxtp[ip->insno] == ip->instr){
+     ip->nxtact = csound->engineState.instrtxtp[ip->insno]->act_instance;
+     csound->engineState.instrtxtp[ip->insno]->act_instance = ip;
+    }
   }
   if (ip->fdchp != NULL)
     fdchclose(csound, ip);
@@ -1039,9 +1047,13 @@ static void deact(CSOUND *csound, INSDS *ip)
 
 
 int32_t kill_instance(CSOUND *csound, KILLOP *p) {
-  INSDS *insds = (INSDS *) ((uintptr_t)*p->inst);
-  if(insds->actflg == 0) return OK;
-  if (LIKELY(*p->inst)) xturnoff(csound, insds);
+  INSDS *insds;
+  // pick up instance from var memory
+  memcpy(&insds, p->inst, sizeof(INSDS *));
+  if (LIKELY(insds))  {
+   if(insds->actflg == 0) return OK;
+   xturnoff(csound, insds);
+  }
   else csound->Warning(csound, Str("instance not valid\n"));
   return OK;
 }
@@ -2007,7 +2019,6 @@ void instance(CSOUND *csound, int32_t insno)
   ip->insno = insno;
   csoundDebugMsg(csound,"instance(): tp->act_instance = %p\n",
                  tp->act_instance);
-
 
   if (insno > csound->engineState.maxinsno) {
     //      size_t pcnt = (size_t) tp->opcode_info->perf_incnt;

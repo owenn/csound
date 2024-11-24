@@ -57,7 +57,7 @@ typedef struct {
 
 typedef struct {
     OPDS    h;
-    MYFLT  *inst;
+    INSTANCEREF *inst;
     MYFLT  *ktrig;
 } KILLOP;
 

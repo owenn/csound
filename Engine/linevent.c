@@ -740,10 +740,11 @@ int32_t play_instr(CSOUND *csound, LINEVENT2 *p) {
    evt.p[3] = -1;
    for (i = 4; i <= evt.pcnt; i++)
         evt.p[i] = *p->args[i-3];
+  
    // pass on the var to hold the instance
    evt.pinstance = (void *) p->inst;
    // suppress ties so that each event makes a different instance
    evt.suppress_tie = 1;
-   insert(csound, res, &evt); 
+   insert(csound, res, &evt);
    return OK;
 }

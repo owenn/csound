@@ -569,7 +569,7 @@ static const uint32_t PHMASK = (1 << 24) - 1;
     int32_t     scnt;
     char    *strarg;
     /* INSDS instance pointer */
-    void  *pinstance;
+    void *pinstance;
     /* suppress ties, add new instance for event */
     int32_t suppress_tie;
     /** Event type */
@@ -665,11 +665,13 @@ static const uint32_t PHMASK = (1 << 24) - 1;
     MYFLT    retval;
     MYFLT   *lclbas;  /* base for variable memory pool */
     char    *strarg;       /* string argument */
+    int32_t     suppress_tie;
     /* Copy of required p-field values for quick access */
     CS_VAR_MEM  p0;
     CS_VAR_MEM  p1;
     CS_VAR_MEM  p2;
     CS_VAR_MEM  p3;
+
   } INSDS;
 
 #define CS_KSMPS     (p->h.insdshead->ksmps)

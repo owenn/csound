@@ -38,7 +38,7 @@ typedef struct {
 
 typedef struct {
     OPDS   h;
-    MYFLT  *inst;
+    INSTANCEREF *inst;
     MYFLT  *args[VARGMAX];
     int32_t argno;
 } LINEVENT2;

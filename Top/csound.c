@@ -830,10 +830,11 @@ static const CSOUND cenviron_ = {
     FL(0.0),
     NULL,
     NULL,
+    0,  /* suppress_tie */
     {NULL, FL(0.0)},
     {NULL, FL(0.0)},
     {NULL, FL(0.0)},
-    {NULL, FL(0.0)}
+    {NULL, FL(0.0)}  
   },
   {0L },          /*  rngcnt              */
   0, 0,           /*  rngflg, multichan   */
@@ -1914,23 +1915,19 @@ int32_t kperf_nodebug(CSOUND *csound)
             }
           }
         }
-        //printf("%p \n", ip); 
-        /* else csound->Message(csound, "time %f\n",
-           csound->kcounter/csound->ekr);*/
         ip->ksmps_offset = 0; /* reset sample-accuracy offset */
         ip->ksmps_no_end = 0; /* reset end of loop samples */
         if(nxt == NULL) {
           ip = ip->nxtact;
         /* VL 13.04.21 this allows for deletions to operate
-           correctly on the active
-           list at perf time
-           this allows for turnoff2 to work correctly
+           correctly on the active list at perf time.
+           This allows for turnoff2 to work correctly
         */
         }
         else {
-          ip = nxt; /* now check again if there is nothing nxt
-                       in the chain making sure turnoff also
-                       works */
+          ip = nxt;
+          /* now check again if there is nothing nxt
+             in the chain making sure turnoff also works  */
         }
       }
     }

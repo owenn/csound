@@ -183,6 +183,7 @@ def runTest():
     ["test_complex_numbers.csd", "testing complex number operations"],
     ["test_schedule_named_instance.csd", "testing schedule with named instr instance"],
     ["test_instr_type_var_new_compilation.csd", "testing schedule of named instr in new compilations"],
+    ["test_ambiguous_opcall.csd", "test ambiguous opcall examples"],
     ]
 
     arrayTests = [["arrays/arrays_i_local.csd", "local i[]"],

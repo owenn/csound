@@ -38,10 +38,30 @@ extern "C" {
     uint32_t    mt[624];
   } CsoundRandMTState;
 
+  typedef struct {
+    char        *opname;
+    char        *outypes;
+    char        *intypes;
+    int32_t     flags;
+  } opcodeListEntry;
+
   /** @defgroup MISCELLANEOUS Miscellaneous functions
    *
    *  @{ */
 
+  /**
+   * Gets an alphabetically sorted list of all opcodes.
+   * Should be called after externals are loaded by csoundCompile().
+   * Returns the number of opcodes, or a negative error code on failure.
+   * Make sure to call csoundDisposeOpcodeList() when done with the list.
+   */
+  PUBLIC int32_t csoundNewOpcodeList(CSOUND *csound, opcodeListEntry **lstp);
+
+  /**
+   * Frees an opcodeListEntry lst created by csoundNewOpcodeList()
+   */
+   PUBLIC void csoundDisposeOpcodeList(CSOUND *csound, opcodeListEntry *lst);  
+  
   /**
    * Runs an external command with the arguments specified in 'argv'.
    * argv[0] is the name of the program to execute (if not a full path

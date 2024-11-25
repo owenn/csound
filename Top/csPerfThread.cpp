@@ -231,6 +231,11 @@ extern "C" {
         } while(sampsread != 0);
                 csoundUnlockMutex (recordData->mutex);
     }
+    csound->Message(csound, "Perf thread: stopped recording,\n"
+                    "closing file %s\n", recordData->sfname);
+    csound->SndfileClose(csound,(SNDFILE *) recordData->sfile);
+    recordData->sfile = NULL;
+    csound->Free(csound, recordData->sfname);
     return (uintptr_t) ((unsigned int) retval);
   }
 }
@@ -294,10 +299,10 @@ public:
         }
         sflib_command((SNDFILE *) recordData->sfile, SFC_SET_CLIPPING,
                    NULL, SFLIB_TRUE);
-
+        recordData->sfname = csound->Strdup(csound, filename.c_str());
         recordData->running = true;
         recordData->thread = csoundCreateThread(recordThread_, (void*) recordData);
-
+         
 
         CsoundPerformanceThreadMessage::unlockRecord();
     }
@@ -306,18 +311,6 @@ public:
       return 0;
     }
     ~CsPerfThreadMsg_Record() {
-      /* VL: This appears to break the recording process
-         needs to be investigated.
-       */
-       /*
-        CsoundPerformanceThreadMessage::lockRecord();
-        recordData_t *recordData = CsoundPerformanceThreadMessage::getRecordData();
-        if (recordData->sfile) {
-            csound->SndfileClose(csound,(SNDFILE *) recordData->sfile);
-            recordData->sfile = NULL;
-        }
-        CsoundPerformanceThreadMessage::unlockRecord();
-      */
     }
 private:
     std::string filename;
@@ -327,26 +320,22 @@ private:
 class CsPerfThreadMsg_StopRecord: public CsoundPerformanceThreadMessage {
 public:
     CsPerfThreadMsg_StopRecord(CsoundPerformanceThread *pt)
-      : CsoundPerformanceThreadMessage(pt) {}
+      : CsoundPerformanceThreadMessage(pt) { }
     int run()
     {
 
       CsoundPerformanceThreadMessage::lockRecord();
       recordData_t *recordData = CsoundPerformanceThreadMessage::getRecordData();
       CSOUND *csound = recordData->csound;
+      
       if (recordData->running) {
           recordData->running = false;
           csoundJoinThread(recordData->thread);
-         /* VL: This appears to break the recording process
-          needs to be investigated. I'm reverting the old code for now.
-           */
-          csound->SndfileClose(csound,(SNDFILE *) recordData->sfile);
-          /*
-          if (recordData->sfile) {
+          if (recordData->sfile) { // if for some reason the file wasn't closed
             csound->SndfileClose(csound,(SNDFILE *) recordData->sfile);
             recordData->sfile = NULL;
+            csound->Free(csound, recordData->sfname);
           }
-          */
       }
 
       CsoundPerformanceThreadMessage::unlockRecord();

@@ -246,8 +246,17 @@ extern "C" {
     size_t   allocated; /* size of allocated data */
   };
 
-  /**
-   * Type definition for strings
+  /*
+   *  INSTR REF Type
+   */
+  typedef struct instrRef {
+    INSTRTXT *instr;
+    int32_t   readonly;
+  } INSTREF;
+
+#define MAX_STRINGDAT_SIZE 0xFFFFFFFF
+  /*
+   * Type definition for string data 
    */
   struct stringdat {
     char *data;         // null-terminated string
@@ -1056,6 +1065,9 @@ extern "C" {
     int32 (*StringArg2Insno)(CSOUND *, void *p, int32_t is_string);
     char *(*StringArg2Name)(CSOUND *, char *, void *, const char *, int32_t);
     const CS_TYPE *(*GetType)(CSOUND *csound, const char *type);
+    TYPE_POOL *(*GetTypePool)(CSOUND* csound);
+    int32_t (*AddVariableType)(CSOUND* csound, TYPE_POOL* pool,
+                                   CS_TYPE* typeInstance);
 
     /**@}*/
 

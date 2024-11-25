@@ -89,13 +89,6 @@ extern "C" {
     void    *useropinfo; /* user opcode parameters */
   } OENTRY;
 
-  typedef struct {
-    char        *opname;
-    char        *outypes;
-    char        *intypes;
-    int32_t     flags;
-  } opcodeListEntry;
-
   /**
    * Storage for parsed orchestra code, for each opcode in an INSTRTXT.
    */

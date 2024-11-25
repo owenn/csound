@@ -454,6 +454,11 @@ int32_t insert_event(CSOUND *csound, int32_t insno, EVTBLK *newevtp)
     tp->instcnt++;
     csound->dag_changed++;      /* Need to remake DAG */
     nxtp = &(csound->actanchor);    /* now splice into activ lst */
+    /* NB: this is where instance ordering is determined
+       by ascending insno and ascending fractional p1
+       In a future implementation of configurable ordering
+       we should start by looking here
+     */
     while ((prvp = nxtp) && (nxtp = prvp->nxtact) != NULL) {
       if (nxtp->insno > insno ||
           (nxtp->insno == insno && nxtp->p1.value > newevtp->p[1])) {

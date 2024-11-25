@@ -57,11 +57,9 @@ void *sflib_open_fd(int32_t fd, int32_t mode, SFLIB_INFO *sfinfo, int32_t close_
 void *sflib_open(const char *path, int32_t mode, SFLIB_INFO *sfinfo){
       SNDFILE *handle;
       SF_INFO info;
-      if(mode == SFM_WRITE) {
-        info.samplerate = sfinfo->samplerate;
-        info.channels = sfinfo->channels;
-        info.format = sfinfo->format;
-      }
+      info.samplerate = sfinfo->samplerate;
+      info.channels = sfinfo->channels;
+      info.format = sfinfo->format;
       handle = sf_open(path, mode, &info);
       if(mode == SFM_READ) {
         sfinfo->samplerate = info.samplerate;

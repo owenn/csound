@@ -22,6 +22,10 @@ if(BUILD_TESTS)
         engine_test.cpp     
         io_test.cpp
         server_test.cpp
+        csound_plugin_opcode_test.cpp
+        perfthread_test.cpp
+        csound_test_sndfile.cpp
+        test_new_type.cpp
     )
 
     target_compile_features(unittests PUBLIC cxx_std_17)

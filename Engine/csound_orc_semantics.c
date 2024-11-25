@@ -39,6 +39,7 @@
 # define strtok_r strtok_s
 #endif
 
+CS_VAR_POOL *find_global_annotation(char *varName, TYPE_TABLE* typeTable); 
 extern char *csound_orcget_text ( void *scanner );
 static int32_t is_label(char* ident, CONS_CELL* labelList);
 extern uint64_t csound_orcget_locn(void *);
@@ -283,7 +284,7 @@ static int32_t isirate(/*CSOUND *csound,*/ TREE *t)
 CS_VARIABLE* find_var_from_pools(CSOUND* csound, char* varName,
                                  char* varBaseName, TYPE_TABLE* typeTable) {
   CS_VARIABLE* var = NULL;
-
+  
   /* VL: 16/01/2014
      in a second compilation, the
      typeTable->globalPool is incorrect and will not
@@ -632,9 +633,13 @@ char* get_arg_type2(CSOUND* csound, TREE* tree, TYPE_TABLE* typeTable)
 
     if (*s == '#')
       s++;
-    
+
+    // strip @global if it exists, it's a non-op here
+    find_global_annotation(s, typeTable); 
     // find the variable in one of the variable pools 
     var = find_var_from_pools(csound, s, tree->value->lexeme, typeTable);
+
+    
     if (UNLIKELY(var == NULL)) {   
       synterr(csound, Str("get_arg_type2: Variable '%s' used before defined\n"
                           "Line %d"),
@@ -1470,10 +1475,8 @@ int32_t check_args_exist(CSOUND* csound, TREE* tree, TYPE_TABLE* typeTable) {
   return 1;
 }
 
-// For explicit types only (T_TYPED_IDENT)
-// returns the correct pool and as side effect
-// removes the global annotation
-// from variable name.
+// returns the correct pool (local or global) and as side effect
+// removes the global annotation from variable name.
 // Expected syntax: var@global
 CS_VAR_POOL *find_global_annotation(char *varName, TYPE_TABLE* typeTable) {
   CS_VAR_POOL* pool = typeTable->localPool;
@@ -1495,7 +1498,8 @@ CS_VAR_POOL *find_global_annotation(char *varName, TYPE_TABLE* typeTable) {
    If the variable is found, a consistency check is made
    to make sure the argument type matches the existing variable
 */
-void add_arg(CSOUND* csound, char* varName, char* annotation, TYPE_TABLE* typeTable) {
+void add_arg(CSOUND* csound, char* varName, char* annotation,
+             TYPE_TABLE* typeTable) {
 
   const CS_TYPE* type;
   CS_VARIABLE* var;
@@ -1509,11 +1513,16 @@ void add_arg(CSOUND* csound, char* varName, char* annotation, TYPE_TABLE* typeTa
   var = find_var_from_pools(csound, varName, varName, typeTable);
   if (var == NULL) {
     if (annotation != NULL) {
-      // check for global annotation
+      // check for global annotation in explicit-type rhs vars
       pool = find_global_annotation(varName, typeTable);
       type = csoundGetTypeWithVarTypeName(csound->typePool, annotation);
       typeArg = (void *) type;
     } else {
+      // check for @global in implicit-type rhs vars
+      // and if found, strip it and print warning
+      if(find_global_annotation(varName, typeTable) == typeTable->globalPool)
+        csound->Warning(csound, "%s: @global annotation ignored", varName); 
+          
       t = varName;
       argLetter[1] = 0;
 

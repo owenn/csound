@@ -966,7 +966,7 @@ OENTRY opcodlst_1[] = {
   { "event_i", S(LINEVENT),0,     "",     "Sim",  eventOpcodeI, NULL, NULL  },
   { "event.S", S(LINEVENT),0,        "",    "SSz",  NULL, eventOpcode_S, NULL   },
   { "event_i.S", S(LINEVENT),0,     "",    "SSm",  eventOpcodeI_S, NULL, NULL  },
-  { "perf", S(LINEVENT2), 0,  ":Instr;", ":InstrDef;m", (SUBR) play_instr, NULL, NULL },
+  { "play", S(LINEVENT2), 0,  ":Instr;", ":InstrDef;m", (SUBR) play_instr, NULL, NULL },
   { "instance.instri", S(LINEVENT2),0,   ":Instr;",  ":InstrDef;iim",  instanceOpcode_Instr, NULL, NULL  },
   { "instance.instrk", S(LINEVENT2),0,    ":Instr;",  ":InstrDef;kz",  NULL, instanceOpcode_Instr, NULL   },
   { "instance.i", S(LINEVENT2),0,   ":Instr;",  "iiim",  instanceOpcode, NULL, NULL  },

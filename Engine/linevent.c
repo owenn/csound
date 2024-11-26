@@ -727,6 +727,9 @@ int32_t instanceOpcode_Instr(CSOUND *csound, LINEVENT2 *p)
 
 int32_t insert(CSOUND *, int32_t, EVTBLK *);
 
+/* play opcode
+   plays an instrument indefinitely and returns an instance
+ */
 int32_t play_instr(CSOUND *csound, LINEVENT2 *p) {
    EVTBLK  evt;
    int32_t res, i;

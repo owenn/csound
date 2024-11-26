@@ -1969,8 +1969,7 @@ int32_t findLabelMemOffset(CSOUND* csound, INSTRTXT* ip, char* labelName) {
 
 /* create instance of an instr template */
 /*   allocates and sets up all pntrs    */
-
-INSDS *instance(CSOUND *csound, int32_t insno)
+static INSDS *instantiate(CSOUND *csound, int32_t insno, int32_t link)
 {
   INSTRTXT  *tp;
   INSDS     *ip;
@@ -2011,23 +2010,22 @@ INSDS *instance(CSOUND *csound, int32_t insno)
   ip->csound = csound;
   ip->m_chnbp = (MCHNBLK*) NULL;
   ip->instr = tp;
-  /* IV - Oct 26 2002: replaced with faster version (no search) */
-  ip->prvinstance = tp->lst_instance;
-  if (tp->lst_instance)
-    tp->lst_instance->nxtinstance = ip;
-  else
-    tp->instance = ip;
-  tp->lst_instance = ip;
-  /* link into free instance chain */
-  ip->nxtact = tp->act_instance;
-  tp->act_instance = ip;
-  ip->insno = insno;
-  csoundDebugMsg(csound,"instance(): tp->act_instance = %p\n",
+  if(link) {
+    ip->prvinstance = tp->lst_instance;
+    if (tp->lst_instance)
+     tp->lst_instance->nxtinstance = ip;
+    else
+     tp->instance = ip;
+    tp->lst_instance = ip;
+    /* link into free instance chain */
+    ip->nxtact = tp->act_instance;
+    tp->act_instance = ip;
+    ip->insno = insno;
+    csoundDebugMsg(csound,"instance(): tp->act_instance = %p\n",
                  tp->act_instance);
+  }
 
   if (insno > csound->engineState.maxinsno) {
-    //      size_t pcnt = (size_t) tp->opcode_info->perf_incnt;
-    //      pcnt += (size_t) tp->opcode_info->perf_outcnt;
     OPCODINFO* info = tp->opcode_info;
     size_t pcnt = sizeof(OPCOD_IOBUFS) +
       sizeof(MYFLT*) * (info->inchns + info->outchns);
@@ -2257,6 +2255,10 @@ INSDS *instance(CSOUND *csound, int32_t insno)
   return ip;
 }
 
+INSDS *instance(CSOUND *csound, int32_t insno) {
+  return instantiate(csound, insno, 1);
+}
+
 int32_t prealloc_(CSOUND *csound, AOP *p, int32_t instname)
 {
   int32_t     n, a;
@@ -2434,279 +2436,6 @@ int32_t csoundKillInstanceInternal(CSOUND *csound, MYFLT instr, char *instrName,
   return CSOUND_SUCCESS;
 }
 
-/* instantiate but do not link into free act chain
-*/
-static INSDS *instance_nolink(CSOUND *csound, int32_t insno)
-{
-  INSTRTXT  *tp;
-  INSDS     *ip;
-  OPTXT     *optxt;
-  OPDS      *opds, *prvids, *prvpds, *prvpdd;
-  const OENTRY  *ep;
-  int32_t       i, n, pextent, pextra, pextrab;
-  char      *nxtopds, *opdslim;
-  MYFLT     **argpp, *lclbas;
-  CS_VAR_MEM *lcloffbas; // start of pfields
-  char*     opMemStart;
-
-  OPARMS    *O = csound->oparms;
-  int32_t       odebug = O->odebug;
-  ARG*      arg;
-  int32_t       argStringCount;
-  CS_VARIABLE* current;
-
-  tp = csound->engineState.instrtxtp[insno];
-  n = 3;
-  if (O->midiKey>n) n = O->midiKey;
-  if (O->midiKeyCps>n) n = O->midiKeyCps;
-  if (O->midiKeyOct>n) n = O->midiKeyOct;
-  if (O->midiKeyPch>n) n = O->midiKeyPch;
-  if (O->midiVelocity>n) n = O->midiVelocity;
-  if (O->midiVelocityAmp>n) n = O->midiVelocityAmp;
-  pextra = n-3;
-  pextrab = ((i = tp->pmax - 3L) > 0 ? (int32_t) i * sizeof(CS_VAR_MEM) : 0);
-  /* alloc new space,  */
-  pextent = sizeof(INSDS) + pextrab + pextra*sizeof(CS_VAR_MEM);
-  ip =
-    (INSDS*) csound->Calloc(csound,
-                            (size_t) pextent + tp->varPool->poolSize +
-                            (tp->varPool->varCount *
-                             CS_FLOAT_ALIGN(CS_VAR_TYPE_OFFSET)) +
-                            (tp->varPool->varCount * sizeof(CS_VARIABLE*)) +
-                            tp->opdstot);
-  ip->csound = csound;
-  ip->m_chnbp = (MCHNBLK*) NULL;
-  ip->instr = tp;
-  ip->insno = insno;
-  csoundDebugMsg(csound,"instance(): tp->act_instance = %p\n",
-                 tp->act_instance);
-
-  if (insno > csound->engineState.maxinsno) {
-    OPCODINFO* info = tp->opcode_info;
-    size_t pcnt = sizeof(OPCOD_IOBUFS) +
-      sizeof(MYFLT*) * (info->inchns + info->outchns);
-    ip->opcod_iobufs = (void*) csound->Malloc(csound, pcnt);
-  }
-
-  lcloffbas = (CS_VAR_MEM*)&ip->p0;
-  lclbas = (MYFLT*) ((char*) ip + pextent);   /* split local space */
-  initializeVarPool((void *)csound, lclbas, tp->varPool);
-
-  opMemStart = nxtopds = (char*) lclbas + tp->varPool->poolSize +
-    (tp->varPool->varCount * CS_FLOAT_ALIGN(CS_VAR_TYPE_OFFSET));
-  opdslim = nxtopds + tp->opdstot;
-  if (UNLIKELY(odebug))
-    csound->Message(csound,
-                    Str("instr %d allocated at %p\n\tlclbas %p, opds %p\n"),
-                    insno, ip, lclbas, nxtopds);
-  optxt = (OPTXT*) tp;
-  prvids = prvpds = prvpdd = (OPDS*) ip;
-  
-  /* initialize vars for CS_TYPE */
-  for (current = tp->varPool->head; current != NULL; current = current->next) {
-    char* ptr = (char*)(lclbas + current->memBlockIndex);
-    const CS_TYPE** typePtr = (const CS_TYPE**)(ptr - CS_VAR_TYPE_OFFSET);
-    *typePtr = current->varType;
-  }
-
-  while ((optxt = optxt->nxtop) != NULL) {    /* for each op in instr */
-    TEXT *ttp = &optxt->t;
-    ep = ttp->oentry;
-    opds = (OPDS*) nxtopds;                   /*   take reqd opds */
-    nxtopds += ep->dsblksiz;
-    if (UNLIKELY(strcmp(ep->opname, "endin") == 0         /*  (until ENDIN)  */
-                 || strcmp(ep->opname, "endop") == 0))    /*  (or ENDOP)     */
-      break;
-
-    if (UNLIKELY(strcmp(ep->opname, "pset") == 0)) {
-      ip->p1.value = (MYFLT) insno;
-      continue;
-    }
-
-    if (UNLIKELY(odebug))
-      csound->Message(csound, Str("op (%s) allocated at %p\n"),
-                      ep->opname, opds);
-    opds->optext = optxt;                     /* set common headata */
-    opds->insdshead = ip;
-    if (strcmp(ep->opname, "$label") == 0) {     /* LABEL:       */
-      LBLBLK  *lblbp = (LBLBLK *) opds;
-      lblbp->prvi = prvids;                   /*    save i/p links */
-      lblbp->prvp = prvpds;
-      lblbp->prvd = prvpdd;
-      continue;                               /*    for later refs */
-    }
-
-    if (ep->init != NULL) {  /* init */
-      prvids = prvids->nxti = opds; /* link into ichain */
-      opds->init = ep->init; /*   & set exec adr */
-      if (UNLIKELY(odebug))
-        csound->Message(csound, "%s init = %p\n",
-                        ep->opname,(void*) opds->init);
-    }
-    if (ep->perf != NULL) {  /* perf */
-      prvpds = prvpds->nxtp = opds; /* link into pchain */
-      opds->perf = ep->perf;  /*     perf   */
-      if (UNLIKELY(odebug))
-        csound->Message(csound, "%s perf = %p\n",
-                        ep->opname,(void*) opds->perf);
-    }
-    if(ep->deinit != NULL) {  /* deinit */
-      prvpdd = prvpdd->nxtd = opds; /* link into dchain */
-      opds->deinit = ep->deinit;  /*   deinit   */
-      if (UNLIKELY(odebug))
-        csound->Message(csound, "%s deinit = %p\n",
-                        ep->opname,(void*) opds->deinit);
-    }
-
-    if (ep->useropinfo == NULL)
-      argpp = (MYFLT **) ((char *) opds + sizeof(OPDS));
-    else          /* user defined opcodes are a special case */
-      argpp = &(((UOPCODE *) ((char *) opds))->ar[0]);
-
-    arg = ttp->outArgs;
-    for (n = 0; arg != NULL; n++) {
-      MYFLT *fltp;
-      CS_VARIABLE* var = (CS_VARIABLE*)arg->argPtr;
-      if (arg->type == ARG_GLOBAL) {
-        fltp = &(var->memBlock->value); 
-      }
-      else if (arg->type == ARG_LOCAL) {
-        fltp = lclbas + var->memBlockIndex;
-
-        if (arg->structPath != NULL) {
-          char* path = cs_strdup(csound, arg->structPath);
-          char *next, *th;
-
-          next = cs_strtok_r(path, ".", &th);
-          while (next != NULL) {
-            CS_TYPE* type = csoundGetTypeForArg(fltp);
-            CS_STRUCT_VAR* structVar = (CS_STRUCT_VAR*)fltp;
-            CONS_CELL* members = type->members;
-            int32_t i = 0;
-            while(members != NULL) {
-              CS_VARIABLE* member = (CS_VARIABLE*)members->value;
-              if (!strcmp(member->varName, next)) {
-                fltp = &(structVar->members[i]->value);
-                break;
-              }
-
-              i++;
-              members = members->next;
-            }
-            next = cs_strtok_r(NULL, ".", &th);
-          }
-        }
-      }
-      else if (arg->type == ARG_PFIELD) {
-        CS_VAR_MEM* pfield = lcloffbas + arg->index;
-        fltp = &(pfield->value);
-      }
-      else {
-        csound->Message(csound, Str("FIXME: Unhandled out-arg type: %d\n"),
-                        arg->type);
-        fltp = NULL;
-      }
-      argpp[n] = fltp;
-      arg = arg->next;
-    }
-
-    for (argStringCount = argsRequired(ep->outypes);
-         n < argStringCount;
-         n++)  /* if more outypes, pad */
-      argpp[n] = NULL;
-
-    arg = ttp->inArgs;
-    ip->lclbas = lclbas;
-    for (; arg != NULL; n++, arg = arg->next) {
-      CS_VARIABLE* var = (CS_VARIABLE*)(arg->argPtr);
-      if (arg->type == ARG_CONSTANT) {
-        CS_VAR_MEM *varMem = (CS_VAR_MEM*)arg->argPtr;
-        argpp[n] = &varMem->value;
-      }
-      else if (arg->type == ARG_STRING) {
-        argpp[n] = (MYFLT*)(arg->argPtr);
-      }
-      else if (arg->type == ARG_PFIELD) {
-        CS_VAR_MEM* pfield = lcloffbas + arg->index;
-        argpp[n] = &(pfield->value);
-      }
-      else if (arg->type == ARG_GLOBAL) {
-        argpp[n] =  &(var->memBlock->value); 
-      }
-      else if (arg->type == ARG_LOCAL){
-        argpp[n] = lclbas + var->memBlockIndex;
-        if (arg->structPath != NULL) {
-          char* path = cs_strdup(csound, arg->structPath);
-          char *next, *th;
-          next = cs_strtok_r(path, ".", &th);
-          while (next != NULL) {
-            CS_STRUCT_VAR* structVar = (CS_STRUCT_VAR*)argpp[n];
-            CS_TYPE* type = csoundGetTypeForArg(argpp[n]);
-            CONS_CELL* members = type->members;
-            int32_t i = 0;
-            while(members != NULL) {
-              CS_VARIABLE* member = (CS_VARIABLE*)members->value;
-              if (!strcmp(member->varName, next)) {
-                argpp[n] = &(structVar->members[i]->value);
-                break;
-              }
-              i++;
-              members = members->next;
-            }
-            next = cs_strtok_r(NULL, ".", &th);
-          }
-        }
-      }
-      else if (arg->type == ARG_LABEL) {
-        argpp[n] = (MYFLT*)(opMemStart +
-                            findLabelMemOffset(csound, tp, (char*)arg->argPtr));
-      }
-      else {
-        csound->Message(csound, Str("FIXME: instance unexpected arg: %d\n"),
-                        arg->type);
-      }
-    }
-  }
-  
-  /* VL 13-12-13: point the memory to the local ksmps & kr variables,
-     and initialise them */
-  CS_VARIABLE* var = csoundFindVariableWithName(csound,
-                                                ip->instr->varPool, "ksmps");
-  if (var) {
-    char* temp = (char*)(lclbas + var->memBlockIndex);
-    var->memBlock = (CS_VAR_MEM*)(temp - CS_VAR_TYPE_OFFSET);
-    var->memBlock->value = csound->ksmps;
-  }
-  var = csoundFindVariableWithName(csound, ip->instr->varPool, "kr");
-  if (var) {
-    char* temp = (char*)(lclbas + var->memBlockIndex);
-    var->memBlock = (CS_VAR_MEM*)(temp - CS_VAR_TYPE_OFFSET);
-    var->memBlock->value = csound->ekr;
-  }
-
-  var = csoundFindVariableWithName(csound, ip->instr->varPool, "sr");
-  if (var) {
-    char* temp = (char*)(lclbas + var->memBlockIndex);
-    var->memBlock = (CS_VAR_MEM*)(temp - CS_VAR_TYPE_OFFSET);
-    var->memBlock->value = csound->esr;
-  }
-
-  var = csoundFindVariableWithName(csound, ip->instr->varPool, "this_instr");
-  if(var) {
-    INSTREF src = { ip->instr, 0 }, *dest; 
-    char* temp = (char*)(lclbas + var->memBlockIndex);
-    var->memBlock = (CS_VAR_MEM*)(temp - CS_VAR_TYPE_OFFSET);
-    dest = (INSTREF *) &(var->memBlock->value);
-    var->varType->copyValue(csound, var->varType, dest, &src, NULL);
-    // mark it as read-only
-    dest->readonly = 1;
-  }
-  if (UNLIKELY(nxtopds > opdslim))
-    csoundDie(csound, Str("inconsistent opds total"));
-
-  return ip;
-}
-
 
 /* init instance 
    - allocates a new instance 
@@ -2727,7 +2456,8 @@ static INSDS *init_instance(CSOUND *csound, EVTBLK *newevtp)
   
   csound->inerrcnt = 0;
   tp = csound->engineState.instrtxtp[insno];
-  ip = instance_nolink(csound, insno);
+  // create instance but don't link into act_instance chain
+  ip = instantiate(csound, insno, 0);
 
   ATOMIC_SET(ip->init_done, 0);
   ip->insno = insno;

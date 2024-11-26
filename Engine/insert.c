@@ -2582,6 +2582,7 @@ static int32_t perf_instance(CSOUND *csound, INSDS *ip) {
 }
 
 /** instance init opcode
+    creates an instance from an InstrDef and runs init-pass
     var:Instr  init  InstrDef[,p4, ...]
  */
 int32_t init_instance_opcode(CSOUND *csound, INIT_INSTANCE *p) {
@@ -2607,6 +2608,7 @@ int32_t init_instance_opcode(CSOUND *csound, INIT_INSTANCE *p) {
 }
 
 /** Instance performance opcode
+    single perf-pass for instance
     err:k perf Instr
 */
 int32_t perf_instance_opcode(CSOUND *csound, PERF_INSTR *p) {

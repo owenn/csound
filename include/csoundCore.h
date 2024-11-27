@@ -499,6 +499,7 @@ static const uint32_t PHMASK = (1 << 24) - 1;
   */
   typedef struct instanceref {
     struct insds *instance;
+    int32_t   readonly;
   } INSTANCEREF;
   
   typedef struct monblk {

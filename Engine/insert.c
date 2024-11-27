@@ -2249,6 +2249,18 @@ static INSDS *instantiate(CSOUND *csound, int32_t insno, int32_t link)
     // mark it as read-only
     dest->readonly = 1;
   }
+  var = csoundFindVariableWithName(csound, ip->instr->varPool, "this");
+  if(var) {
+    INSTANCEREF src = { ip, 0 }, *dest; 
+    char* temp = (char*)(lclbas + var->memBlockIndex);
+    var->memBlock = (CS_VAR_MEM*)(temp - CS_VAR_TYPE_OFFSET);
+    dest = (INSTANCEREF *) &(var->memBlock->value);
+    var->varType->copyValue(csound, var->varType, dest, &src, NULL);
+    // mark it as read-only
+    dest->readonly = 1;
+  }
+
+  
   if (UNLIKELY(nxtopds > opdslim))
     csoundDie(csound, Str("inconsistent opds total"));
 
@@ -2712,6 +2724,68 @@ int32_t set_instance_parameter(CSOUND *csound, PARM_INSTR *p){
     }
     return OK;
 }
+
+/* splice unlinked instance io before ipnxt
+ */
+static int32_t splice_before_instance(CSOUND *csound, INSDS *ip, INSDS *ipnxt){
+  INSDS *nxtp, *prvp;
+  if(ip->prvact != NULL) {
+    // unlink first
+    ip->prvact->nxtact = ip->nxtact;
+  }
+  nxtp = &(csound->actanchor);    
+  while ((prvp = nxtp) && (nxtp = prvp->nxtact) != NULL) {
+    if (nxtp == ipnxt) {
+        nxtp->prvact = ip;
+        break;
+      }
+  }
+  if(nxtp == NULL) return 1;
+  ip->nxtact = nxtp;
+  ip->prvact = prvp;
+  prvp->nxtact = ip;
+  return 0;
+}
+
+/* splice unlinked instance io after ipprev
+ */
+static int32_t splice_after_instance(CSOUND *csound, INSDS *ip, INSDS *ipprev){
+  INSDS *nxtp;
+  if(ip->prvact != NULL) {
+    // unlink first
+    ip->prvact->nxtact = ip->nxtact;
+  }
+  nxtp = &(csound->actanchor);    
+  while (nxtp != NULL) {
+    if (nxtp == ipprev) {
+        ip->nxtact = nxtp->nxtact;
+        nxtp->nxtact = ip;
+        break;
+      }
+    nxtp = nxtp->nxtact;
+  }
+  if(nxtp == NULL) return 1;
+  ip->prvact = nxtp;
+  return 0;
+}
+
+// return current instance
+int32_t get_instance(CSOUND *csound, DEL_INSTR *p) {
+  p->in->instance = p->h.insdshead;
+ return OK;
+}
+
+int32_t splice_instance(CSOUND *csound, SPLICE_INSTR *p) {
+  if(p->in->instance && p->nxt->instance)
+  *p->out = *p->mode == 0 ?
+    splice_before_instance(csound, p->in->instance,
+                           p->nxt->instance) :
+    splice_after_instance(csound, p->in->instance,
+                          p->nxt->instance);
+  return OK;
+}
+
+
 
 MYFLT csoundInitialiseIO(CSOUND *csound);
 

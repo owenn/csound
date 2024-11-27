@@ -164,7 +164,12 @@ void instrRef_copy_value(CSOUND* csound, const CS_TYPE* cstype, void* dest,
 
 void instanceRef_copy_value(CSOUND* csound, const CS_TYPE* cstype, void* dest,
                       const void* src, OPDS *ctx) {
-  memcpy(dest, src, sizeof(INSTANCEREF));
+  INSTANCEREF *p = (INSTANCEREF *) dest;
+  if(!p->readonly) {
+   memcpy(dest, src, sizeof(INSTANCEREF));
+   p->readonly = 0; // clear readonly flag (which is not copied)
+  }
+  else csound->Warning(csound, "instance ref var is read-only: copy value bypassed");
 }
 
 

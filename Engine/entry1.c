@@ -973,6 +973,8 @@ OENTRY opcodlst_1[] = {
   { "perf", S(PERF_INSTR), 0,  "k", ":Instr;", NULL, (SUBR) perf_instance_opcode, NULL },
   { "setp", S(PARM_INSTR), 0,  "", ":Instr;kk", NULL, (SUBR) set_instance_parameter, NULL },
   { "delete", S(DEL_INSTR), 0,  "", ":Instr;", NULL, NULL, (SUBR) delete_instance_opcode },
+  { "getinstance", S(DEL_INSTR), 0,  ":Instr;", "", (SUBR) get_instance, NULL, NULL },
+  { "splice", S(SPLICE_INSTR), 0,  "i", ":Instr;:Instr;i", (SUBR) splice_instance, NULL, NULL },  
   { "schedule.instri", S(LINEVENT2),0,   ":Instr;",  ":InstrDef;iim",  instanceOpcode_Instr, NULL, NULL  },
   { "schedule.instrk", S(LINEVENT2),0,    ":Instr;",  ":InstrDef;kz",  NULL, instanceOpcode_Instr, NULL   },
   { "schedule.i", S(LINEVENT2),0,   ":Instr;",  "iiim",  instanceOpcode, NULL, NULL  },

@@ -135,6 +135,14 @@ typedef struct {
 
 typedef struct {
   OPDS h;
+  MYFLT *out;
+  INSTANCEREF *in;
+  INSTANCEREF *nxt;
+  MYFLT *mode;
+} SPLICE_INSTR;
+
+typedef struct {
+  OPDS h;
   INSTANCEREF *in;
   MYFLT *pause;
 } PAUSE_INSTR;
@@ -152,5 +160,7 @@ int32_t perf_instance_opcode(CSOUND *csound, PERF_INSTR *p);
 int32_t delete_instance_opcode(CSOUND *csound, DEL_INSTR *p);
 int32_t pause_instance_opcode(CSOUND *csound, PAUSE_INSTR *p);
 int32_t set_instance_parameter(CSOUND *csound, PARM_INSTR *p);
-  
+int32_t get_instance(CSOUND *csound, DEL_INSTR *p);
+int32_t splice_instance(CSOUND *csound, SPLICE_INSTR *p);
+
 #endif

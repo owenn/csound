@@ -2477,6 +2477,7 @@ static INSDS *create_instance(CSOUND *csound, int32_t insno)
     ip->ksmps_offset = 0;
     ip->ksmps_no_end = 0;
     ip->no_end = 0;
+    ip->nxtact = ip->prvact = NULL; /* NOT in act chain */
   }
   return ip;
 }
@@ -2531,11 +2532,50 @@ int32_t init_instance(CSOUND *csound, INSDS *ip,
 }
 
 /* frees instance memory
-   - should only be called on instances not in activ chain,  
+   - should only be called on instances not in act chain,  
    that is, created by init_instance 
 */
 static void free_instance(CSOUND *csound, INSDS *ip) {
-  csound->Free(csound, ip);
+  // don't touch any instances that are in the act chain
+  if(ip->nxtact != NULL ||
+     ip->prvact != NULL) return;
+  // deactivate any opcodes
+  // NB: memory for these is freed elsewhere (orcompact)
+  // as opcodes exist in the activ chain
+  if (ip->opcod_deact) {
+    int32_t k;
+    UOPCODE *p = (UOPCODE*) ip->opcod_deact;  
+    // free converter if it has already been created (maybe we could reuse?)
+    for(k=0; k<OPCODENUMOUTS_MAX; k++)
+      if(p->cvt_in[k] != NULL) {
+        src_deinit(csound, p->cvt_in[k]);
+        p->cvt_in[k] = NULL; // clear pointer
+      }
+      else break; // first null indicates end of cvt list
+    for(k=0; k<OPCODENUMOUTS_MAX; k++)
+      if(p->cvt_out[k] != NULL) {
+        src_deinit(csound, p->cvt_out[k]);
+        p->cvt_out[k] = NULL; // clear pointer
+      }
+      else break; // first null indicates end of cvt list
+    deact(csound, p->ip);     /* deactivate */
+    p->ip = NULL;
+    p->h.perf = (SUBR) useropcd;
+    ip->opcod_deact = NULL;
+ }
+ // same for any subinstrs 
+ if (ip->subins_deact) {
+    deact(csound, ((SUBINST*) ip->subins_deact)->ip); 
+    ((SUBINST*) ip->subins_deact)->ip = NULL;
+    ip->subins_deact = NULL;
+  }
+ // now we deal with memory create in this ip 
+ if (ip->fdchp != NULL)
+    fdchclose(csound, ip);
+ if (ip->auxchp != NULL)
+    auxchfree(csound, ip);
+ free_instr_var_memory(csound, ip);
+ csound->Free(csound, ip);
 }
 
 /* performs one k-cycle for instance *ip
@@ -2638,39 +2678,13 @@ int32_t perf_instance_opcode(CSOUND *csound, PERF_INSTR *p) {
                                     "NULL instance\n");
     return OK;
 }
-
-MYFLT csoundInitialiseIO(CSOUND *csound);
-
-/** experimental perf loop opcode to run on instr 0
-    -- not for production --
-    OENTRY entry = 
-    { "perfloop", S(PERF_INSTR), 0,  "", "i:Instr;", 
-      (SUBR) perf_loop_opcode, NULL, NULL };
- */
-int32_t perf_loop_opcode(CSOUND *csound, PERF_INSTR *p) {
-    INSDS *ip = p->in->instance;
-    int32_t err = 0;
-    size_t count = (size_t) (*p->out*csoundGetKr(csound));
-    if(p->h.insdshead->insno == 0) {
-    if(csound->spoutran == NULL)
-      csoundInitialiseIO(csound);
-    while(ip != NULL && --count && !err) {
-      memset(csound->spout, 0, csound->nspout*sizeof(MYFLT));
-      memset(csound->spout_tmp,0,
-         sizeof(MYFLT)*csound->nspout*csound->oparms->numThreads);
-      err = perf_instance(csound, ip);
-      csound->spoutran(csound); /* send to audio_out */
-    }
-    } else csound->Warning(csound, "perfloop: only allowed in instr 0\n");
-    return OK;
-}
-
 /** delete Instr
     runs only at deinit time
  */
 int32_t delete_instance_opcode(CSOUND *csound, DEL_INSTR *p) {
     INSDS *ip = p->in->instance;
     if(ip != NULL) free_instance(csound, ip);
+    p->in->instance = NULL;
     return OK;
 }
 
@@ -2696,5 +2710,31 @@ int32_t set_instance_parameter(CSOUND *csound, PARM_INSTR *p){
         pfield->value = *p->val;
       }
     }
+    return OK;
+}
+
+MYFLT csoundInitialiseIO(CSOUND *csound);
+
+/** experimental perf loop opcode to run on instr 0
+    -- not for production --
+    OENTRY entry = 
+    { "perfloop", S(PERF_INSTR), 0,  "", "i:Instr;", 
+      (SUBR) perf_loop_opcode, NULL, NULL };
+ */
+int32_t perf_loop_opcode(CSOUND *csound, PERF_INSTR *p) {
+    INSDS *ip = p->in->instance;
+    int32_t err = 0;
+    size_t count = (size_t) (*p->out*csoundGetKr(csound));
+    if(p->h.insdshead->insno == 0) {
+    if(csound->spoutran == NULL)
+      csoundInitialiseIO(csound);
+    while(ip != NULL && --count && !err) {
+      memset(csound->spout, 0, csound->nspout*sizeof(MYFLT));
+      memset(csound->spout_tmp,0,
+         sizeof(MYFLT)*csound->nspout*csound->oparms->numThreads);
+      err = perf_instance(csound, ip);
+      csound->spoutran(csound); /* send to audio_out */
+    }
+    } else csound->Warning(csound, "perfloop: only allowed in instr 0\n");
     return OK;
 }

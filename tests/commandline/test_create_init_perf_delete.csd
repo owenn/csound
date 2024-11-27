@@ -1,0 +1,30 @@
+<CsoundSynthesizer>
+<CsOptions>
+-n
+</CsOptions>
+<CsInstruments>
+0dbfs = 1
+
+instr 1
+
+ // run at i-time
+  myInstr:InstrDef create {{ out linenr(oscili(p4,k(p5)),0.1,0.1,0.01) }}
+  myInstance:Instr create myInstr
+  err1:i init myInstance,0.5,440
+
+ // run at perf-time
+  err2:k perf myInstance
+  glid:k expon 440, p3, 880
+         setp myInstance, 5, glid
+
+  // run at deinit time
+   delete myInstance 
+   delete myInstr
+
+endin
+
+</CsInstruments>
+<CsScore>
+i1 0 2
+</CsScore>
+</CsoundSynthesizer>

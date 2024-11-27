@@ -113,6 +113,12 @@ typedef struct {
 typedef struct {
   OPDS h;
   INSTANCEREF *out;
+  INSTREF *in;
+} CREATE_INSTANCE;
+
+typedef struct {
+  OPDS h;
+  MYFLT *err;
   MYFLT *args[VARGMAX];
 } INIT_INSTANCE;
 
@@ -140,6 +146,7 @@ typedef struct {
   MYFLT *val;
 } PARM_INSTR;
 
+int32_t create_instance_opcode(CSOUND *csound, CREATE_INSTANCE *p);
 int32_t init_instance_opcode(CSOUND *csound, INIT_INSTANCE *p);
 int32_t perf_instance_opcode(CSOUND *csound, PERF_INSTR *p);
 int32_t delete_instance_opcode(CSOUND *csound, DEL_INSTR *p);

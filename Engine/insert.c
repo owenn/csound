@@ -2437,51 +2437,62 @@ int32_t csoundKillInstanceInternal(CSOUND *csound, MYFLT instr, char *instrName,
 }
 
 
-/* init instance 
+/* create instance 
    - allocates a new instance 
-   - sets actflg
-   - does not add instance to activ chain
-   - runs init pass
-   - should only be called at i-time
+   - does not add instance to activ chain 
    - returns the instance pointer
+   NB: should only be called at i-time
 */
-static INSDS *init_instance(CSOUND *csound, EVTBLK *newevtp)
+static INSDS *create_instance(CSOUND *csound, int32_t insno)
 {
-  INSTRTXT  *tp;
-  int16_t   insno = (int16_t) newevtp->p[1];
   INSDS     *ip;
+ 
+  // create instance but don't link into act_instance chain
+  ip = instantiate(csound, insno, 0);
+  if(ip != NULL) {
+    ip->init_done = 0;
+    ip->insno = (int16_t) insno;
+    ip->esr = csound->esr;
+    ip->pidsr = csound->pidsr;
+    ip->sicvt = csound->sicvt;
+    ip->onedsr = csound->onedsr;
+    ip->ksmps = csound->ksmps;
+    ip->ekr = csound->ekr;
+    ip->kcounter = csound->kcounter;
+    ip->onedksmps = csound->onedksmps;
+    ip->onedkr = csound->onedkr;
+    ip->kicvt = csound->kicvt;
+    ip->pds = NULL;
+    ip->tieflag = 0;
+    ip->suppress_tie = 1;
+    ip->actflg = 0;
+    ip->offbet = -1.0;
+    ip->offtim = -1.0;                        
+    ip->m_chnbp = (MCHNBLK*) NULL;
+    ip->xtratim = 0;
+    ip->relesing = 0;
+    ip->m_sust = 0;
+    ip->nxtolap = NULL;
+    ip->opcod_iobufs = NULL;
+    ip->ksmps_offset = 0;
+    ip->ksmps_no_end = 0;
+    ip->no_end = 0;
+  }
+  return ip;
+}
+  
+int32_t init_instance(CSOUND *csound, INSDS *ip,
+                      EVTBLK *newevtp){
+  INSTRTXT *tp = csound->engineState.instrtxtp[ip->insno];
   CS_VAR_MEM *pfields = NULL;       
   int32_t   i, n, error = 0;
   MYFLT  *fep;
-  
-  csound->inerrcnt = 0;
-  tp = csound->engineState.instrtxtp[insno];
-  // create instance but don't link into act_instance chain
-  ip = instantiate(csound, insno, 0);
-
-  ATOMIC_SET(ip->init_done, 0);
-  ip->insno = insno;
-  ip->esr = csound->esr;
-  ip->pidsr = csound->pidsr;
-  ip->sicvt = csound->sicvt;
-  ip->onedsr = csound->onedsr;
-  ip->ksmps = csound->ksmps;
-  ip->ekr = csound->ekr;
-  ip->kcounter = csound->kcounter;
-  ip->onedksmps = csound->onedksmps;
-  ip->onedkr = csound->onedkr;
-  ip->kicvt = csound->kicvt;
-  ip->pds = NULL;
-  ip->tieflag = 0;
-  ip->suppress_tie = 1;
-  ip->actflg = 1;
 
   pfields = (CS_VAR_MEM*) &ip->p0;
   /* init: */
   if (tp->psetdata) {
     MYFLT *pdat = tp->psetdata + 2;
     int32 nn = tp->pmax - 2; /*   put cur vals in pflds */
-
     for (i = 0; i < nn; i++) {
       CS_VAR_MEM* pfield = (pfields + i + 3);
       pfield->value = *(pdat + i);
@@ -2503,30 +2514,20 @@ static INSDS *init_instance(CSOUND *csound, EVTBLK *newevtp)
     }
   }
 
-  ip->offbet = -1.0;
-  ip->offtim = -1.0;                        
-  ip->m_chnbp = (MCHNBLK*) NULL;
-  ip->xtratim = 0;
-  ip->relesing = 0;
-  ip->m_sust = 0;
-  ip->nxtolap = NULL;
-  ip->opcod_iobufs = NULL;
+  csound->inerrcnt = 0;
   ip->strarg = newevtp->strarg;
-  ip->ksmps_offset = 0;
-  ip->ksmps_no_end = 0;
-  ip->no_end = 0;
-
   csound->init_event = newevtp;
   error = init_pass(csound, ip);
-  if(error == 0)
+  if(error == 0) {
     ATOMIC_SET(ip->init_done, 1);
+    ip->actflg = 1;  // set as active
+  }
 
   if (UNLIKELY(csound->inerrcnt)) {
     xturnoff_now(csound, ip);
     csound->Free(csound, ip);
-    return NULL;
   } 
-  return ip;
+  return error;
 }
 
 /* frees instance memory
@@ -2581,16 +2582,30 @@ static int32_t perf_instance(CSOUND *csound, INSDS *ip) {
   return error;
 }
 
-/** instance init opcode
-    creates an instance from an InstrDef and runs init-pass
-    var:Instr  init  InstrDef[,p4, ...]
+/** Instance create opcode
+    creates and instance of instr ref
+    var:Instr  init  InstrRef
+*/
+int32_t create_instance_opcode(CSOUND *csound, CREATE_INSTANCE *p) {
+  INSDS *ip = create_instance(csound, instr_num(csound,p->in->instr));
+  if(ip != NULL) {
+    p->out->instance = ip;
+    return OK;
+  } else return csound->InitError(csound,
+                                  "could not instantiate instr %d\n",
+                                  instr_num(csound,p->in->instr));  
+}
+
+/** Instance init opcode
+    runs init-pass on instr instance ref
+    error:i  init  Instr[,p4, ...]
  */
 int32_t init_instance_opcode(CSOUND *csound, INIT_INSTANCE *p) {
   EVTBLK evt;
-  INSDS *ip;
-  INSTREF *ref = (INSTREF *) p->args[0];
+  INSTANCEREF *ref = (INSTANCEREF *) p->args[0];
   int32_t i;
-  evt.p[1] = FL(instr_num(csound, ref->instr));
+  if(ref->instance != NULL) {
+  evt.p[1] = FL(ref->instance->insno);
   evt.p[2] = FL(0.0);
   evt.p[3] = -1;
   evt.strarg = NULL;
@@ -2599,12 +2614,11 @@ int32_t init_instance_opcode(CSOUND *csound, INIT_INSTANCE *p) {
   evt.pcnt = p->INOCOUNT + 2;
   for (i = 4; i <= evt.pcnt; i++)
         evt.p[i] = *p->args[i-3];
-  if((ip = init_instance(csound, &evt)) != NULL) {
-    p->out->instance = ip;
+  if((*p->err = init_instance(csound, ref->instance, &evt)) == 0) 
     return OK;
-  } else return csound->InitError(csound, "init instance: "
-                                  "instantiation error for instr %d\n",
-                                  (int32_t) evt.p[1]);    
+  else return csound->InitError(csound, "error for instr %d\n",
+                                  (int32_t) evt.p[1]);
+  } else return csound->InitError(csound, "NULL instance\n");
 }
 
 /** Instance performance opcode
@@ -2613,8 +2627,15 @@ int32_t init_instance_opcode(CSOUND *csound, INIT_INSTANCE *p) {
 */
 int32_t perf_instance_opcode(CSOUND *csound, PERF_INSTR *p) {
     INSDS *ip = p->in->instance; 
-    if(ip != NULL) *p->out = FL(perf_instance(csound, ip));
-    else csound->Warning(csound, "perf instance: NULL instance"); 
+    if(ip != NULL) {
+      if (ip->init_done) 
+      *p->out = FL(perf_instance(csound, ip));
+      else return csound->PerfError(csound, &(p->h),  
+                                    "instr %d not initialised\n",
+                                      ip->insno);
+    }
+    else csound->PerfError(csound, &(p->h),  
+                                    "NULL instance\n");
     return OK;
 }
 

@@ -179,7 +179,7 @@ def runTest():
     ["test_delete_instr.csd", "test creating and deleting instr"],
     ["test_create_instr.csd", "testing creating and scheduling instr"],
     ["test_instance_type.csd", "testing instance type"],
-    ["test_perf_opcode.csd", "testing perf opcode"],
+    ["test_play_opcode.csd", "testing play opcode"],
     ["test_complex_numbers.csd", "testing complex number operations"],
     ["test_schedule_named_instance.csd", "testing schedule with named instr instance"],
     ["test_ambiguous_opcall.csd", "test ambiguous opcall examples"],

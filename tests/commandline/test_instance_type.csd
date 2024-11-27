@@ -8,7 +8,7 @@ myInstrument:InstrDef = createinstr({{
                         out oscili(p4,p5)
                         }})
 
-myInstance:Instr = instance(myInstrument, 0, 1,
+myInstance:Instr = schedule(myInstrument, 0, 1,
                             0dbfs/2, 440)
 
 </CsInstruments>

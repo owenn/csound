@@ -50,7 +50,7 @@ int32_t pnum(char *s);
 static void unquote_string(char *, const char *);
 void print_tree(CSOUND *, char *, TREE *);
 void close_instrument(CSOUND *csound, ENGINE_STATE *engineState, INSTRTXT *ip);
-char argtyp2(char *s);
+static char argtyp2(char *s);
 void debugPrintCsound(CSOUND *csound);
 
 void named_instr_assign_numbers(CSOUND *csound, ENGINE_STATE *engineState);
@@ -476,16 +476,19 @@ OPTXT *create_opcode(CSOUND *csound, TREE *root, INSTRTXT *ip,
         tp->outArgCount++;
 
       }
+  
       if (root->left != NULL) {      /* pftype defined by outarg */
         if (root->left->type == STRUCT_EXPR) {
           tp->pftype = '_';
         } else {
+          // NB: note that argtyp2() only works for implicit types
           tp->pftype = argtyp2( root->left->value->lexeme);
         }
       }
       else {                            /*    else by 1st inarg     */
         if (root->right != NULL) {
           if (ep->intypes[0] != 'l') {     /* intype defined by 1st inarg */
+            // NB: note that argtyp2() only works for implicit types
             tp->pftype = argtyp2( tp->inlist->arg[0]);
           }
           else  {

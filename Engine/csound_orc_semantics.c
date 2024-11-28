@@ -39,7 +39,6 @@
 extern char *csound_orcget_text ( void *scanner );
 static int32_t is_label(char* ident, CONS_CELL* labelList);
 extern uint64_t csound_orcget_locn(void *);
-extern  char argtyp2(char*);
 extern  int32_t tree_arg_list_count(TREE *);
 void print_tree(CSOUND *, char *, TREE *);
 char *remove_type_quoting(CSOUND *csound, const char *outype);
@@ -515,7 +514,7 @@ char* get_arg_type2(CSOUND* csound, TREE* tree, TYPE_TABLE* typeTable)
 
     }
   }
-
+ 
   switch(tree->type) {
   case NUMBER_TOKEN:
   case INTEGER_TOKEN:
@@ -623,6 +622,7 @@ char* get_arg_type2(CSOUND* csound, TREE* tree, TYPE_TABLE* typeTable)
         }
         return res;
       } else {
+        printf("vargtype %s \n", var->varType->varTypeName);
         return cs_strdup(csound, var->varType->varTypeName);
       }
 
@@ -1251,15 +1251,15 @@ char* get_arg_string_from_tree(CSOUND* csound, TREE* tree,
   int32_t argsLen = 0;
 
   while (current != NULL) {
+    if(current->type == T_TYPED_IDENT) printf("typed ident %s\n", current->value->lexeme);
     char* argType = get_arg_type2(csound, current, typeTable);
 
     if (argType == NULL) {
       // if we failed to find argType, exit from parser
       csound->Die(csound, "Could not parse type for argument");
     } else {
-
       argType = convert_internal_to_external(csound, argType);
-
+      printf("argtype %s \n", argType);
       argsLen += strlen(argType);
       argTypes[index++] = argType;
     }
@@ -1923,7 +1923,8 @@ int32_t verify_opcode(CSOUND* csound, TREE* root, TYPE_TABLE* typeTable) {
   add_args(csound, root->left, typeTable);
 
   opcodeName = root->value->lexeme;
-  //printf("%p %p (%s)\n", root, root->value, opcodeName);
+  if(root->left)
+  printf("%s %s (%s)\n", root->left->value->lexeme, root->right->value->lexeme, opcodeName);
   leftArgString = get_arg_string_from_tree(csound, left, typeTable);
   rightArgString = get_arg_string_from_tree(csound, right, typeTable);
 
@@ -3386,15 +3387,6 @@ void handle_optional_args(CSOUND *csound, TREE *l)
       csound->Free(csound, inArgParts);
     }
   }
-}
-
-char tree_argtyp(CSOUND *csound, TREE *tree) {
-  IGN(csound);
-  if (tree->type == INTEGER_TOKEN || tree->type == NUMBER_TOKEN) {
-    return 'i';
-  }
-
-  return argtyp2( tree->value->lexeme);
 }
 
 void add_instr_variable(CSOUND *csound,  TREE *x) {

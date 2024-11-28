@@ -2712,6 +2712,7 @@ int32_t delete_instance_opcode(CSOUND *csound, DEL_INSTR *p) {
     INSDS *ip = p->in->instance;
     if(ip != NULL) free_instance(csound, ip);
     p->in->instance = NULL;
+    p->in->readonly = 0;
     return OK;
 }
 

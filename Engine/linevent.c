@@ -730,7 +730,7 @@ int32_t insert_new_event(CSOUND *csound, int32_t insno,
 
 /* play opcode
    plays an instrument  
-   indefinitely and returns a read-only instance ref
+   indefinitely and returns an instance ref
    NB: instance is added to the end of activ chain regardless of instr number
    var:Instr play InstrRef[, p4, ...]
  */
@@ -756,7 +756,6 @@ int32_t play_instr(CSOUND *csound, LINEVENT2 *p) {
   
    // pass on the var to hold the instance
    evt.pinstance = (void *) p->inst;
-   p->inst->readonly = 1;
    // suppress ties so that each event makes a different instance
    evt.suppress_tie = 1;
    insert_new_event(csound, res, &evt, 1);

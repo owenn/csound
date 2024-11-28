@@ -2496,7 +2496,7 @@ static INSDS *create_instance(CSOUND *csound, int32_t insno)
     ip->ksmps_no_end = 0;
     ip->no_end = 0;
     ip->linked = 0;
-    ip->nxtact = ip->prvact = NULL; /* NOT in act chain */
+    ip->nxtoff = ip->nxtact = ip->prvact = NULL; /* NOT in act chain */
   }
   return ip;
 }
@@ -2553,7 +2553,6 @@ static void free_instance(CSOUND *csound, INSDS *ip) {
  if (ip->auxchp != NULL)
     auxchfree(csound, ip);
  free_instr_var_memory(csound, ip);
- printf("deleting %d \n", ip->insno);
  csound->Free(csound, ip);
 }
   
@@ -2675,11 +2674,6 @@ int32_t play_instr(CSOUND *csound, LINEVENT2 *p) {
    for (i = 4; i <= evt.pcnt; i++)
         evt.p[i] = *p->args[i-3];
   
-   // pass on the var to hold the instance
-   //evt.pinstance = (void *) p->inst;
-   // suppress ties so that each event makes a different instance
-   //evt.suppress_tie = 1;
-   //insert_new_event(csound, res, &evt, 1);
    ip = create_instance(csound, res);
    if(ip != NULL) {
     int32_t err = init_instance(csound, ip, &evt);

@@ -5,10 +5,14 @@
 <CsInstruments>
 0dbfs = 1
 
+opcode Osci(a:k,f:k):a
+xout linenr(oscili(p4,k(p5)),0.1,0.1,0.01) 
+endop
+
 instr 1
 
  // run at i-time
-  myInstr:InstrDef create {{ out linenr(oscili(p4,k(p5)),0.1,0.1,0.01) }}
+  myInstr:InstrDef create {{ out Osci(p4,k(p5)) }}
   myInstance:Instr create myInstr
   err1:i init myInstance,0.5,440
 

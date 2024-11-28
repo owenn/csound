@@ -724,42 +724,7 @@ int32_t instanceOpcode_Instr(CSOUND *csound, LINEVENT2 *p)
     return instanceOpcode_(csound, p, 2);
 }
 
-int32_t insert_new_event(CSOUND *csound, int32_t insno,
-                     EVTBLK *newevtp, int order);
 
 
-/* play opcode
-   plays an instrument  
-   indefinitely and returns an instance ref
-   NB: instance is added to the end of activ chain regardless of instr number
-   var:Instr play InstrRef[, p4, ...]
- */
-int32_t play_instr(CSOUND *csound, LINEVENT2 *p) {
-  if(p->inst->readonly)
-    return
-      csound->InitError(csound, "cannot write to instance ref for instr %d\n"
-                        "- read-only variable",
-                        instr_num(csound, ((INSTREF *) p->args[0])->instr));
-  else {
-   EVTBLK  evt;
-   int32_t res, i;
-   INSTREF *ref = (INSTREF *) p->args[0];
-   res = instr_num(csound, ref->instr);
-   evt.strarg = NULL; evt.scnt = 0;
-   evt.opcod = 'i';
-   evt.pcnt = p->INOCOUNT + 2;
-   evt.p[1] = FL(res);
-   evt.p[2] = FL(0.0);
-   evt.p[3] = -1;
-   for (i = 4; i <= evt.pcnt; i++)
-        evt.p[i] = *p->args[i-3];
-  
-   // pass on the var to hold the instance
-   evt.pinstance = (void *) p->inst;
-   // suppress ties so that each event makes a different instance
-   evt.suppress_tie = 1;
-   insert_new_event(csound, res, &evt, 1);
-   return OK;
-  }
-}
+
 

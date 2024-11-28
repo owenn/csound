@@ -406,14 +406,10 @@ int32_t insert_new_event(CSOUND *csound, int32_t insno,
     newp1 = named_instr_find(csound, newevtp->strarg);
 
   newevtp->p[1] = newp1 != 0 ? newp1 : newevtp->p[1];
-  /* if we allow tied events (default behaviour) */
-  int32_t suppress_tie = 0;
-  if(newevtp->suppress_tie == 0) {
   /* if find this insno, active, with indef (tie) & matching p1 
      and tie was not suppressed */
-  suppress_tie = 0;  // turn off tie suppression for this ip
   for (ip = tp->instance; ip != NULL; ip = ip->nxtinstance) {
-    if (ip->actflg && ip->offtim < 0.0 && ip->suppress_tie == 0
+    if (ip->actflg && ip->offtim < 0.0 
         && ip->p1.value == newevtp->p[1]) {
       csound->tieflag++;
       ip->tieflag = 1;
@@ -421,7 +417,6 @@ int32_t insert_new_event(CSOUND *csound, int32_t insno,
       break;
     }
    }
-  } else suppress_tie = 1;
 
   if(!tie) {
     /* alloc new dspace if needed */
@@ -454,7 +449,6 @@ int32_t insert_new_event(CSOUND *csound, int32_t insno,
     ip->onedkr = csound->onedkr;
     ip->kicvt = csound->kicvt;
     ip->pds = NULL;
-    ip->suppress_tie = suppress_tie;
     /* Add an active instrument */
     tp->active++;
     tp->instcnt++;
@@ -1043,7 +1037,7 @@ static void deact(CSOUND *csound, INSDS *ip)
     else
       csound->Message(csound, Str("removed instance of instr %d\n"), ip->insno);
    }
-  /* IV - Oct 24 2002: ip->prvact may be NULL, so need to check */
+
   if (ip->prvact && (nxtp = ip->prvact->nxtact = ip->nxtact) != NULL) {
     nxtp->prvact = ip->prvact;
   }
@@ -2033,6 +2027,7 @@ static INSDS *instantiate(CSOUND *csound, int32_t insno, int32_t link)
     ip->nxtact = tp->act_instance;
     tp->act_instance = ip;
     ip->insno = insno;
+    ip->linked = 1;
     csoundDebugMsg(csound,"instance(): tp->act_instance = %p\n",
                  tp->act_instance);
   }
@@ -2488,7 +2483,6 @@ static INSDS *create_instance(CSOUND *csound, int32_t insno)
     ip->kicvt = csound->kicvt;
     ip->pds = NULL;
     ip->tieflag = 0;
-    ip->suppress_tie = 1;
     ip->actflg = 0;
     ip->offbet = -1.0;
     ip->offtim = -1.0;                        
@@ -2501,6 +2495,7 @@ static INSDS *create_instance(CSOUND *csound, int32_t insno)
     ip->ksmps_offset = 0;
     ip->ksmps_no_end = 0;
     ip->no_end = 0;
+    ip->linked = 0;
     ip->nxtact = ip->prvact = NULL; /* NOT in act chain */
   }
   return ip;
@@ -2511,9 +2506,17 @@ static INSDS *create_instance(CSOUND *csound, int32_t insno)
    that is, created by init_instance 
 */
 static void free_instance(CSOUND *csound, INSDS *ip) {
+   // if ip still active, xturnoff
+  if(ip->actflg) xturnoff(csound, ip);
   // don't touch any instances that are in the act chain
-  if(ip->nxtact != NULL ||
-     ip->prvact != NULL) return;
+  if(ip->linked) return;
+   if(ip->prvact != NULL) {
+    // unlink first
+    ip->prvact->nxtact = ip->nxtact;
+   } 
+   if(ip->nxtact != NULL)
+       ip->nxtact->prvact = NULL;
+     
   // deactivate any opcodes
   // NB: memory for these is freed elsewhere (orcompact)
   // as opcodes exist in the activ chain
@@ -2550,6 +2553,7 @@ static void free_instance(CSOUND *csound, INSDS *ip) {
  if (ip->auxchp != NULL)
     auxchfree(csound, ip);
  free_instr_var_memory(csound, ip);
+ printf("deleting %d \n", ip->insno);
  csound->Free(csound, ip);
 }
   
@@ -2642,6 +2646,66 @@ static int32_t perf_instance(CSOUND *csound, INSDS *ip) {
   }
   return error;
 }
+
+#include "linevent.h"
+/* play opcode
+   plays an instrument  
+   indefinitely and returns an instance ref
+   NB: instance is added to the end of activ chain regardless of instr number
+   var:Instr play InstrRef[, p4, ...]
+ */
+int32_t play_instr(CSOUND *csound, LINEVENT2 *p) {
+  if(p->inst->readonly)
+    return
+      csound->InitError(csound, "cannot write to instance ref for instr %d\n"
+                        "- read-only variable",
+                        instr_num(csound, ((INSTREF *) p->args[0])->instr));
+  else {
+   EVTBLK  evt;
+   INSDS *ip;
+   int32_t res, i;
+   INSTREF *ref = (INSTREF *) p->args[0];
+   res = instr_num(csound, ref->instr);
+   evt.strarg = NULL; evt.scnt = 0;
+   evt.opcod = 'i';
+   evt.pcnt = p->INOCOUNT + 2;
+   evt.p[1] = FL(res);
+   evt.p[2] = FL(0.0);
+   evt.p[3] = -1;
+   for (i = 4; i <= evt.pcnt; i++)
+        evt.p[i] = *p->args[i-3];
+  
+   // pass on the var to hold the instance
+   //evt.pinstance = (void *) p->inst;
+   // suppress ties so that each event makes a different instance
+   //evt.suppress_tie = 1;
+   //insert_new_event(csound, res, &evt, 1);
+   ip = create_instance(csound, res);
+   if(ip != NULL) {
+    int32_t err = init_instance(csound, ip, &evt);
+    if(err == 0) {
+     INSDS *prvp, *nxtp;
+     nxtp = &(csound->actanchor);    /* now splice into activ lst */
+     // splice at end of chain
+      while ((prvp = nxtp) &&
+             (nxtp = prvp->nxtact) != NULL)
+        ;
+      ip->nxtact = nxtp;
+      ip->prvact = prvp;
+      prvp->nxtact = ip;
+      ((INSTANCEREF *) p->inst)->instance = ip;
+      return OK;
+    }
+    else return csound->InitError(csound,
+                                  "could not initialise instr %d",
+                                   res);
+  } else return csound->InitError(csound,
+                                  "could not instantiate instr %d",
+                                  res);
+  }
+}
+
+
 
 /** Instance create opcode
     creates a read-only instance ref of instr ref

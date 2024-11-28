@@ -666,7 +666,7 @@ static const uint32_t PHMASK = (1 << 24) - 1;
     MYFLT    retval;
     MYFLT   *lclbas;  /* base for variable memory pool */
     char    *strarg;       /* string argument */
-    int32_t     suppress_tie;
+    int32_t  linked;  /* linked to instrtxt->act_instance */
     /* Copy of required p-field values for quick access */
     CS_VAR_MEM  p0;
     CS_VAR_MEM  p1;

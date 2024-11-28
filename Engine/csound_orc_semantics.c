@@ -622,7 +622,6 @@ char* get_arg_type2(CSOUND* csound, TREE* tree, TYPE_TABLE* typeTable)
         }
         return res;
       } else {
-        printf("vargtype %s \n", var->varType->varTypeName);
         return cs_strdup(csound, var->varType->varTypeName);
       }
 
@@ -1251,15 +1250,12 @@ char* get_arg_string_from_tree(CSOUND* csound, TREE* tree,
   int32_t argsLen = 0;
 
   while (current != NULL) {
-    if(current->type == T_TYPED_IDENT) printf("typed ident %s\n", current->value->lexeme);
     char* argType = get_arg_type2(csound, current, typeTable);
-
     if (argType == NULL) {
       // if we failed to find argType, exit from parser
       csound->Die(csound, "Could not parse type for argument");
     } else {
       argType = convert_internal_to_external(csound, argType);
-      printf("argtype %s \n", argType);
       argsLen += strlen(argType);
       argTypes[index++] = argType;
     }
@@ -1923,8 +1919,6 @@ int32_t verify_opcode(CSOUND* csound, TREE* root, TYPE_TABLE* typeTable) {
   add_args(csound, root->left, typeTable);
 
   opcodeName = root->value->lexeme;
-  if(root->left)
-  printf("%s %s (%s)\n", root->left->value->lexeme, root->right->value->lexeme, opcodeName);
   leftArgString = get_arg_string_from_tree(csound, left, typeTable);
   rightArgString = get_arg_string_from_tree(csound, right, typeTable);
 

@@ -344,29 +344,13 @@ void maxalloc_turnoff(CSOUND *csound, int32_t insno) {
   }
 }
 
-static void standard_splice(CSOUND *csound, INSDS *ip, int32_t p1) {
-  INSDS *prvp, *nxtp;
-  int32_t insno = ip->insno;
-  nxtp = &(csound->actanchor);    /* now splice into activ lst */
-  // standard splice: instrument number and p1 ascending order
-  while ((prvp = nxtp) && (nxtp = prvp->nxtact) != NULL) {
-    if (nxtp->insno > insno ||
-        (nxtp->insno == insno && nxtp->p1.value > p1)) {
-      nxtp->prvact = ip;
-      break;
-    }
-  }
-  ip->nxtact = nxtp;
-  ip->prvact = prvp;
-  prvp->nxtact = ip;
-}
 
-/* insert new event supplying a custom splice
-   function
+/* insert new event with different instance orderings
+   order = 0 - standard order
+   order = 1 - add to the end of chain
 */
 int32_t insert_new_event(CSOUND *csound, int32_t insno,
-                     EVTBLK *newevtp,
-                     void (*splice)(CSOUND *, INSDS*, int32_t))
+                     EVTBLK *newevtp, int32_t order)
 {
   INSTRTXT  *tp;
   INSDS     *ip;
@@ -475,7 +459,29 @@ int32_t insert_new_event(CSOUND *csound, int32_t insno,
     tp->active++;
     tp->instcnt++;
     csound->dag_changed++;      /* Need to remake DAG */
-    splice(csound, ip, newevtp->p[1]);
+    if(order == 0) {
+      INSDS *prvp, *nxtp;
+      nxtp = &(csound->actanchor);    /* now splice into activ lst */
+      // standard splice: instrument number and p1 ascending order
+     while ((prvp = nxtp) && (nxtp = prvp->nxtact) != NULL) {
+      if (nxtp->insno > insno ||
+        (nxtp->insno == insno && nxtp->p1.value > newevtp->p[1])) {
+      nxtp->prvact = ip;
+      break;
+    }
+     } 
+     ip->nxtact = nxtp;
+     ip->prvact = prvp;
+     prvp->nxtact = ip;
+    } else {
+     INSDS *prvp, *nxtp;
+     nxtp = &(csound->actanchor);    /* now splice into activ lst */
+     // splice at end of chain
+     while ((prvp = nxtp) && (nxtp = prvp->nxtact) != NULL);
+     ip->nxtact = nxtp;
+     ip->prvact = prvp;
+     prvp->nxtact = ip;
+    }      
     ip->tieflag = 0;
     ip->actflg++;                   /*    and mark the instr active */
   }
@@ -629,7 +635,7 @@ int32_t insert_new_event(CSOUND *csound, int32_t insno,
 
 int32_t insert_event(CSOUND *csound, int32_t insno,
                      EVTBLK *newevtp) {
-  return insert_new_event(csound, insno, newevtp, standard_splice);
+  return insert_new_event(csound, insno, newevtp, 0);
 }
 
 

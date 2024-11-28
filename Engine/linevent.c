@@ -725,20 +725,7 @@ int32_t instanceOpcode_Instr(CSOUND *csound, LINEVENT2 *p)
 }
 
 int32_t insert_new_event(CSOUND *csound, int32_t insno,
-                     EVTBLK *newevtp,
-                     void (*splice)(CSOUND *, INSDS*, int32_t));
-
-static void end_splice(CSOUND *csound, INSDS *ip, int32_t p1) {
-  INSDS *prvp, *nxtp;
-  nxtp = &(csound->actanchor);    /* now splice into activ lst */
-  // splice at end of chain
-  while ((prvp = nxtp) && (nxtp = prvp->nxtact) != NULL);
-  ip->nxtact = nxtp;
-  ip->prvact = prvp;
-  prvp->nxtact = ip;
-}
-
-
+                     EVTBLK *newevtp, int order);
 
 
 /* play opcode
@@ -772,7 +759,7 @@ int32_t play_instr(CSOUND *csound, LINEVENT2 *p) {
    p->inst->readonly = 1;
    // suppress ties so that each event makes a different instance
    evt.suppress_tie = 1;
-   insert_new_event(csound, res, &evt, end_splice);
+   insert_new_event(csound, res, &evt, 1);
    return OK;
   }
 }

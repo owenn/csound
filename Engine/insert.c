@@ -1126,7 +1126,7 @@ void xturnoff(CSOUND *csound, INSDS *ip)  /* turnoff a particular insalloc  */
   if (ip->xtratim > 0) {
     set_xtratim(csound, ip);
 #ifdef BETA
-    if (UNLIKELY(csound->oparms->odebug))
+if (UNLIKELY(csound->oparms->odebug))
       csound->Message(csound, "Calling schedofftim line %d\n", __LINE__);
 #endif
     schedofftim(csound, ip);
@@ -2506,8 +2506,11 @@ static INSDS *create_instance(CSOUND *csound, int32_t insno)
    that is, created by init_instance 
 */
 static void free_instance(CSOUND *csound, INSDS *ip) {
-   // if ip still active, xturnoff
-  if(ip->actflg) xturnoff(csound, ip);
+  // if active turnoff immediately
+  if(ip->actflg) {
+    ip->xtratim = 0;
+    xturnoff(csound, ip);
+  }
   // don't touch any instances that are in the act chain
   if(ip->linked) return;
    if(ip->prvact != NULL) {

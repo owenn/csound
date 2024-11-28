@@ -336,9 +336,9 @@ void maxalloc_turnoff(CSOUND *csound, int32_t insno) {
     }
     if (ip2 != NULL) {
       xturnoff_now(csound, ip2);
-      if (!ip->actflg) {  /* if current note was deactivated: */
-        while (ip->pds != NULL && ip->pds->nxtp != NULL)
-          ip->pds = ip->pds->nxtp;            /* loop to last opds */
+      if (!ip2->actflg) {  /* if current note was deactivated: */
+        while (ip2->pds != NULL && ip2->pds->nxtp != NULL)
+          ip2->pds = ip2->pds->nxtp;            /* loop to last opds */
       }
     }
   }

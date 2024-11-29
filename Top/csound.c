@@ -832,7 +832,8 @@ static const CSOUND cenviron_ = {
     FL(0.0),
     NULL,
     NULL,
-    0,  /* suppress_tie */
+    0,  /* link flag */
+    0,  /* instance id */
     {NULL, FL(0.0)},
     {NULL, FL(0.0)},
     {NULL, FL(0.0)},
@@ -1129,7 +1130,8 @@ static const CSOUND cenviron_ = {
   SAsndgetset,
   sndgetset,
   getsndin
-  }
+  },
+  0 /* instance count */
 };
 
 void csound_aops_init_tables(CSOUND *cs);

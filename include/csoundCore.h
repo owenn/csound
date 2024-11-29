@@ -667,6 +667,7 @@ static const uint32_t PHMASK = (1 << 24) - 1;
     MYFLT   *lclbas;  /* base for variable memory pool */
     char    *strarg;       /* string argument */
     int32_t  linked;  /* linked to instrtxt->act_instance */
+    uint64_t instance_id; /* instance id number */
     /* Copy of required p-field values for quick access */
     CS_VAR_MEM  p0;
     CS_VAR_MEM  p1;
@@ -2171,6 +2172,7 @@ static inline double PHMOD1(double p) {
     CORFIL *playscore;
     spin_lock_t osc_spinlock;
     CSOUND_UTIL csound_util;
+    uint64_t instance_count;
     /*struct CSOUND_ **self;*/
     /**@}*/
 #endif  /* __BUILDING_LIBCSOUND */

@@ -421,12 +421,15 @@ int32_t insert_new_event(CSOUND *csound, int32_t insno,
   if(!tie) {
     /* alloc new dspace if needed */
     if (tp->act_instance == NULL || tp->isNew) {
+      csound->instance_count++;
       if (UNLIKELY(O->msglevel & CS_RNGEMSG)) {
         char *name = csound->engineState.instrtxtp[insno]->insname;
         if (UNLIKELY(name))
-          csound->ErrorMsg(csound, Str("new alloc for instr %s:\n"), name);
+          csound->ErrorMsg(csound, Str("new alloc (instance %llu) for instr %s:\n"),
+                           csound->instance_count, name);
         else
-          csound->ErrorMsg(csound, Str("new alloc for instr %d:\n"), insno);
+          csound->ErrorMsg(csound, Str("new alloc (instance %llu) for instr %d:\n"),
+                           csound->instance_count, insno);
       }
       instance(csound, insno);
       tp->isNew=0;
@@ -478,8 +481,11 @@ int32_t insert_new_event(CSOUND *csound, int32_t insno,
     }      
     ip->tieflag = 0;
     ip->actflg++;                   /*    and mark the instr active */
+    if(ip->instance_id == 0)
+      ip->instance_id = csound->instance_count;
   }
 
+  
   /* init: */
   pfields = (CS_VAR_MEM*)&ip->p0;
   if (tp->psetdata) {
@@ -612,6 +618,7 @@ int32_t insert_new_event(CSOUND *csound, int32_t insno,
     ip->offbet = -1.0;
     ip->offtim = -1.0;                        /*   else mark indef     */
   }
+  
   if (UNLIKELY(O->odebug)) {
     char *name = csound->engineState.instrtxtp[insno]->insname;
     if (UNLIKELY(name))
@@ -2497,6 +2504,19 @@ static INSDS *create_instance(CSOUND *csound, int32_t insno)
     ip->no_end = 0;
     ip->linked = 0;
     ip->nxtoff = ip->nxtact = ip->prvact = NULL; /* NOT in act chain */
+
+    csound->instance_count++;
+    ip->instance_id = csound->instance_count;
+    const OPARMS* O = csound->GetOParms(csound);
+    if (UNLIKELY(O->msglevel & CS_RNGEMSG)) {
+      char *name = csound->engineState.instrtxtp[ip->insno]->insname;
+      if (UNLIKELY(name))
+        csound->ErrorMsg(csound, Str("new free alloc (instance %llu) for instr %s:\n"),
+                         ip->instance_id, name);
+      else
+        csound->ErrorMsg(csound, Str("new free alloc (instance %llu) for instr %d:\n"),
+                         ip->instance_id, ip->insno);
+    }
   }
   return ip;
 }
@@ -2555,8 +2575,16 @@ static void free_instance(CSOUND *csound, INSDS *ip) {
     fdchclose(csound, ip);
  if (ip->auxchp != NULL)
     auxchfree(csound, ip);
- free_instr_var_memory(csound, ip);
- csound->Free(csound, ip);
+ free_instr_var_memory(csound, ip); 
+ const OPARMS* O = csound->GetOParms(csound);
+ if (UNLIKELY(O->msglevel & CS_RNGEMSG)) {
+   char *name = csound->engineState.instrtxtp[ip->insno]->insname;
+   if (UNLIKELY(name))
+     csound->ErrorMsg(csound, Str("instance %llu (instr %s) deleted\n"), ip->instance_id, name);
+   else
+     csound->ErrorMsg(csound, Str("instance %llu (instr %d) deleted\n"), ip->instance_id, ip->insno);
+ }
+  csound->Free(csound, ip);
 }
   
 int32_t init_instance(CSOUND *csound, INSDS *ip,
@@ -2691,6 +2719,16 @@ int32_t play_instr(CSOUND *csound, LINEVENT2 *p) {
       ip->prvact = prvp;
       prvp->nxtact = ip;
       ((INSTANCEREF *) p->inst)->instance = ip;
+      const OPARMS* O = csound->GetOParms(csound);
+      if (UNLIKELY(O->msglevel & CS_RNGEMSG)) {
+      char *name = csound->engineState.instrtxtp[ip->insno]->insname;
+      if (UNLIKELY(name))
+        csound->ErrorMsg(csound, Str("instance %llu (instr %s): linked and active\n"),
+                         ip->instance_id, name);
+      else
+        csound->ErrorMsg(csound, Str("instance %llu (instr %d): linked and active\n"),
+                         ip->instance_id, ip->insno);
+    }  
       return OK;
     }
     else return csound->InitError(csound,

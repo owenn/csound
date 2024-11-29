@@ -148,7 +148,7 @@ TEST_F (SndfileTests, testWriteSndfile)
   ASSERT_TRUE (result == 0);
   while(!result)
     result = csoundPerformKsmps(csound);
-  csound->Free(csound, sfcbs);
+
 }
 
 TEST_F (SndfileTests, testReadSndfile)
@@ -171,5 +171,5 @@ TEST_F (SndfileTests, testReadSndfile)
   ASSERT_TRUE (result == 0);
   while(!result)
     result = csoundPerformKsmps(csound);
-  csound->Free(csound, sfcbs);
+
 }

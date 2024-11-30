@@ -1058,19 +1058,24 @@ static void deact(CSOUND *csound, INSDS *ip)
       csound->Message(csound, Str("removed instance of instr %d\n"), ip->insno);
   }
 
+ 
   if (ip->prvact && (nxtp = ip->prvact->nxtact = ip->nxtact) != NULL) {
     nxtp->prvact = ip->prvact;
   }
+  
   if(ip->actflg != 0) {
     /*  prevent a loop in kperf() in case deact() is called on 
         an inactive instance */
     ip->actflg = 0;
-    /* link into free instance chain so that it can be reused */
-    if (csound->engineState.instrtxtp[ip->insno] == ip->instr){
-      ip->nxtact = csound->engineState.instrtxtp[ip->insno]->act_instance;
-      csound->engineState.instrtxtp[ip->insno]->act_instance = ip;
+    if(ip->linked) {
+      /* link into free instance chain so that it can be reused */
+      if (csound->engineState.instrtxtp[ip->insno] == ip->instr){
+        ip->nxtact = csound->engineState.instrtxtp[ip->insno]->act_instance;
+        csound->engineState.instrtxtp[ip->insno]->act_instance = ip;
+      }
     }
-  }
+  } 
+  
   if (ip->fdchp != NULL)
     fdchclose(csound, ip);
   csound->dag_changed++;
@@ -2555,9 +2560,15 @@ static void free_instance(CSOUND *csound, INSDS *ip) {
   if(ip->prvact != NULL) {
     // unlink first
     ip->prvact->nxtact = ip->nxtact;
+    if(ip->nxtact != NULL)
+      ip->nxtact->prvact = ip->prvact;
+    ip->prvact = NULL;
+    ip->nxtact = NULL;
   } 
-  if(ip->nxtact != NULL)
+  else if(ip->nxtact != NULL) {
     ip->nxtact->prvact = NULL;
+    ip->nxtact = NULL;
+  }
      
   // deactivate any opcodes
   // NB: memory for these is freed elsewhere (orcompact)
@@ -2839,7 +2850,6 @@ int32_t create_instance_opcode(CSOUND *csound, CREATE_INSTANCE *p) {
                                            "- read-only variable",
                                            instr_num(csound,p->in->instr));
   INSDS *ip = create_instance(csound, instr_num(csound,p->in->instr));
-  p->out->readonly = 1;
   if(ip != NULL) {
     p->out->instance = ip;
     return OK;

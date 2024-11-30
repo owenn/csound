@@ -1058,12 +1058,11 @@ static void deact(CSOUND *csound, INSDS *ip)
       csound->Message(csound, Str("removed instance of instr %d\n"), ip->insno);
   }
 
- 
-  if (ip->prvact && (nxtp = ip->prvact->nxtact = ip->nxtact) != NULL) {
-    nxtp->prvact = ip->prvact;
-  }
-  
+
   if(ip->actflg != 0) {
+   if (ip->prvact && (nxtp = ip->prvact->nxtact = ip->nxtact) != NULL) {
+    nxtp->prvact = ip->prvact;
+    }
     /*  prevent a loop in kperf() in case deact() is called on 
         an inactive instance */
     ip->actflg = 0;

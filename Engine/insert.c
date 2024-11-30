@@ -2547,6 +2547,8 @@ static INSDS *create_instance(CSOUND *csound, int32_t insno)
     All active instances are turned off.
 */
 static void free_instance(CSOUND *csound, INSDS *ip) {
+  // unpause
+  if(ip->actflg == 0) ip->actflg = 1;  
   // turnoff immediately
   ip->xtratim = 0;
   xturnoff(csound, ip);

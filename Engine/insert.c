@@ -2548,27 +2548,12 @@ static INSDS *create_instance(CSOUND *csound, int32_t insno)
     All active instances are turned off.
 */
 static void free_instance(CSOUND *csound, INSDS *ip) {
-  // if active turnoff immediately
-  if(ip->actflg) {
-    ip->xtratim = 0;
-    xturnoff(csound, ip);
-  }
+  // turnoff immediately
+  ip->xtratim = 0;
+  xturnoff(csound, ip);
+  
   // don't touch any instances that are in the act_instance chain
   if(ip->linked) return;
-
-  // unlink from active list
-  if(ip->prvact != NULL) {
-    // unlink first
-    ip->prvact->nxtact = ip->nxtact;
-    if(ip->nxtact != NULL)
-      ip->nxtact->prvact = ip->prvact;
-    ip->prvact = NULL;
-    ip->nxtact = NULL;
-  } 
-  else if(ip->nxtact != NULL) {
-    ip->nxtact->prvact = NULL;
-    ip->nxtact = NULL;
-  }
      
   // deactivate any opcodes
   // NB: memory for these is freed elsewhere (orcompact)
@@ -2819,13 +2804,19 @@ int32_t play_instr(CSOUND *csound, LINEVENT2 *p) {
         const OPARMS* O = csound->GetOParms(csound);
         if (UNLIKELY(O->msglevel & CS_RNGEMSG)) {
           char *name = csound->engineState.instrtxtp[ip->insno]->insname;
-          if (UNLIKELY(name))
-            csound->ErrorMsg(csound, Str("instance %llu (instr %s): linked and active\n"),
-                             ip->instance_id, name);
-          else
-            csound->ErrorMsg(csound, Str("instance %llu (instr %d): linked and active\n"),
-                             ip->instance_id, ip->insno);
-        }  
+          if(csound->GetDebug(csound)) {
+            if (UNLIKELY(name))
+              csound->ErrorMsg(csound,
+                               Str("instance %llu (instr %s): "
+                                   "linked and active\n"),
+                               ip->instance_id, name);
+            else
+              csound->ErrorMsg(csound,
+                               Str("instance %llu (instr %d): "
+                                   "linked and active\n"),
+                               ip->instance_id, ip->insno);
+          }
+        }
         return OK;
       }
       else return csound->InitError(csound,

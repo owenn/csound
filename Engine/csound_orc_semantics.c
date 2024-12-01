@@ -284,34 +284,19 @@ static int32_t isirate(/*CSOUND *csound,*/ TREE *t)
 CS_VARIABLE* find_var_from_pools(CSOUND* csound, char* varName,
                                  char* varBaseName, TYPE_TABLE* typeTable) {
   CS_VARIABLE* var = NULL;
-  
-  /* VL: 16/01/2014
-     in a second compilation, the
-     typeTable->globalPool is incorrect and will not
-     contain the correct addresses of global variables,
-     which are stored correctly in the engineState.varPool.
-     Ideally we should remove typeTable->globalPool and only use
-     the varPool in the engineState
-  */
-  // first check for implicit global variables
-  if (*varName == 'g' || is_reserved(varName)) {
-    var = csoundFindVariableWithName(csound, csound->engineState.varPool,
-                                    varBaseName);
-   if(var == NULL)
-      var = csoundFindVariableWithName(csound, typeTable->globalPool,
-                                       varBaseName);
-  } else {
-    // now we check for local variables
+
+    // we first check for local variables
     var = csoundFindVariableWithName(csound, typeTable->localPool,
                                      varBaseName);
-    // then check for global variables that may have been explicitly defined
+    // then check for global variables in engine
     if(var == NULL) 
     var = csoundFindVariableWithName(csound, csound->engineState.varPool,
                                      varBaseName);
+    // and finally newly defined global vars
     if(var == NULL)
       var = csoundFindVariableWithName(csound, typeTable->globalPool,
                                        varBaseName);
-  }
+   
   return var;
 }
 
@@ -1517,6 +1502,7 @@ void add_arg(CSOUND* csound, char* varName, char* annotation,
       pool = find_global_annotation(varName, typeTable);
       type = csoundGetTypeWithVarTypeName(csound->typePool, annotation);
       typeArg = (void *) type;
+      printf("%s \n", varName);
     } else {
       // check for @global in implicit-type rhs vars
       // and if found, strip it and print warning

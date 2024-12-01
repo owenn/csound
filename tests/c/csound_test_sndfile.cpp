@@ -87,6 +87,7 @@ int32_t sfile_close(CSOUND *csound, void *p) {
 
 int64_t sfile_write(CSOUND *csound, void *p, MYFLT *data, int64_t frames) {
   sfile *file = (sfile *) p;
+   printf("writing soundfile %p\n", p);
   return fwrite(data, sizeof(MYFLT)*file->sfinfo->channels, frames, file->fp);
 }
 
@@ -97,6 +98,7 @@ int64_t sfile_read(CSOUND *csound, void *p, MYFLT *data, int64_t frames) {
 
 int64_t sfile_write_samples(CSOUND *csound, void *p, MYFLT *data, int64_t samples) {
   sfile *file = (sfile *) p;
+  printf("writing soundfile %p\n", p);
   return fwrite(data, sizeof(MYFLT), samples, file->fp);
 }
 

@@ -1502,7 +1502,7 @@ void add_arg(CSOUND* csound, char* varName, char* annotation,
       pool = find_global_annotation(varName, typeTable);
       type = csoundGetTypeWithVarTypeName(csound->typePool, annotation);
       typeArg = (void *) type;
-      printf("%s \n", varName);
+     
     } else {
       // check for @global in implicit-type rhs vars
       // and if found, strip it and print warning

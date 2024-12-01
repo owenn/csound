@@ -362,8 +362,6 @@ static const uint32_t PHMASK = (1 << 24) - 1;
     uint32_t        inArgCount;
     ARG             *outArgs;
     uint32_t       outArgCount;
-    //    char            intype;         /* Type of first input argument (g,k,a,w etc) */
-    char            pftype;         /* Type of output argument (k,a etc) */
   } TEXT;
 
 

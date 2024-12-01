@@ -30,7 +30,6 @@
 #include "csound_standard_types.h"
 #include <inttypes.h>
 
-extern char argtyp2(char *);
 extern void print_tree(CSOUND *, char *, TREE *);
 extern void handle_optional_args(CSOUND *, TREE *);
 extern ORCTOKEN *make_token(CSOUND *, char *);
@@ -128,12 +127,10 @@ char *create_out_arg(CSOUND *csound, char* outype, int32_t argCount,
  * Handles expression opcode type, appending to passed in opname
  * returns outarg type
  */
-
 char * get_boolean_arg(CSOUND *csound, TYPE_TABLE* typeTable, int32_t type)
 {
   char* s = (char *)csound->Malloc(csound, 8);
   snprintf(s, 8, "#%c%d", type?'B':'b', typeTable->localPool->synthArgCount++);
-
   return s;
 }
 
@@ -734,6 +731,7 @@ static TREE *create_expression(CSOUND *csound, TREE *root, int32_t line,
   return anchor;
 }
 
+//char* get_arg_type2(CSOUND* csound, TREE* tree, TYPE_TABLE* typeTable);
 /**
  * Create a chain of Opcode (OPTXT) text from the AST node given. Called from
  * create_opcode when an expression node has been found as an argument
@@ -854,27 +852,27 @@ static TREE *create_boolean_expression(CSOUND *csound, TREE *root,
 
   if (UNLIKELY(PARSER_DEBUG)) {
     if (root->type == S_UNOT)
-      csound->Message(csound, "Operator Found: %s (%c)\n", op,
-                      argtyp2( root->left->value->lexeme));
+      csound->Message(csound, "Operator Found: %s (%s)\n", op,
+                      get_arg_type2(csound, root->left, typeTable));
     else
-      csound->Message(csound, "Operator Found: %s (%c %c)\n", op,
-                      argtyp2( root->left->value->lexeme),
-                      argtyp2( root->right->value->lexeme));
+      csound->Message(csound, "Operator Found: %s (%s %s)\n", op,
+                      get_arg_type2(csound, root->left, typeTable), 
+                      get_arg_type2(csound, root->right, typeTable));
   }
-  if (root->type == S_UNOT) {
+  if (root->type == S_UNOT)     
     outarg = get_boolean_arg(csound,
                              typeTable,
-                             argtyp2( root->left->value->lexeme) =='k' ||
-                             argtyp2( root->left->value->lexeme) =='B');
-  }
-  else
+                             *get_arg_type2(csound, root->left, typeTable) =='k' ||
+                             *get_arg_type2(csound, root->left, typeTable) =='B');
+  
+  else 
     outarg = get_boolean_arg(csound,
                              typeTable,
-                             argtyp2( root->left->value->lexeme) =='k' ||
-                             argtyp2( root->right->value->lexeme)=='k' ||
-                             argtyp2( root->left->value->lexeme) =='B' ||
-                             argtyp2( root->right->value->lexeme)=='B');
-
+                             *get_arg_type2(csound, root->left, typeTable) =='k' ||
+                             *get_arg_type2(csound, root->right, typeTable) == 'k' ||
+                             *get_arg_type2(csound, root->left, typeTable) =='B' ||
+                             *get_arg_type2(csound, root->right, typeTable) =='B');
+    
   add_arg(csound, outarg, NULL, typeTable);
   opTree = create_opcode_token(csound, op);
   opTree->right = root->left;

@@ -1294,6 +1294,14 @@ void insert_instrtxt(CSOUND *csound, INSTRTXT *instrtxt, int32 instrNum,
                      ENGINE_STATE *engineState, int32_t merge) {
   int32_t i;
 
+  /* redefinition not allowed in the same compilation */
+  if(UNLIKELY(engineState->instrtxtp[instrNum] != NULL) &&
+     !merge) {
+      synterr(csound, Str("instr %d redefined in code:\n"
+                          "redefinition not allowed."), instrNum);
+      return;
+  }
+
   if (UNLIKELY(instrNum >= engineState->maxinsno)) {
     int32_t old_maxinsno = engineState->maxinsno;
 
@@ -1316,9 +1324,6 @@ void insert_instrtxt(CSOUND *csound, INSTRTXT *instrtxt, int32 instrNum,
     instrtxt->isNew = 1;
 
     /* redefinition does not raise an error now, just a warning */
-    /* unless we are not merging */
-    if (!merge)
-      synterr(csound, Str("instr %d redefined\n"), instrNum);
     if (UNLIKELY(instrNum && csound->oparms->odebug))
       csound->Warning(csound, Str("instr %" PRIi32 " redefined, "
                                   "replacing previous definition"),

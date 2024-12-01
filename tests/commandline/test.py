@@ -121,6 +121,7 @@ def runTest():
 	["test46.csd", "if-then with expression in boolean comparison"],
 	["test47.csd", "until loop and t-variables"],
 	["test48.csd", "expected failure with variable used before defined", 1],
+    ["test_instr_redefinition.csd", "expected failure with instr redefinition", 1],
 	["test_instr0_labels.csd", "test labels in instr0 space"],
 	["test_string.csd", "test string assignment and printing"],
 	["test_sprintf.csd", "test string assignment and printing"],
@@ -140,6 +141,7 @@ def runTest():
              "test expected failure with negative dimension size and array", 1],
 
 	["test_audio_in.csd", "test the parsing of the 'in' operator as opcode"],
+    
 
 	["test_empty_conditional_branches.csd", "tests that empty branches do not cause compiler issues"],
 	["test_empty_instr.csd", "tests that empty instruments do not cause compiler issues"],

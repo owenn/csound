@@ -169,6 +169,8 @@ def runTest():
         ["prints_number_no_crash.csd", "test prints does not crash when given a number arguments", 1],
         ["test_newlines_within_function_calls.csd", "test newlines allowed within function calls"],
         ["test_comma_newline.csd", "test commas followed by newlines"],
+        ["test_explicit_globals.csd", "test global declaration of explicit types"],
+        ["test_fail_mismatched_types.csd", "syntax error on mismatched type declaration", 1],        
 
     ["test_declare.csd", "test declare keyword (CS7)"],
     ["test_plusname.csd", "test +Name for instr name"],
@@ -180,6 +182,7 @@ def runTest():
     ["test_create_instr.csd", "testing creating and scheduling instr"],
     ["test_complex_numbers.csd", "testing complex number operations"],
     ["test_schedule_named_instance.csd", "testing schedule with named instr instance"],
+    ["test_instr_type_var_new_compilation.csd", "testing schedule of named instr in new compilations"],
     ["test_ambiguous_opcall.csd", "test ambiguous opcall examples"],
     ]
 

@@ -530,7 +530,6 @@ int32_t csoundCleanup(CSOUND *csound)
     }
 
     orcompact(csound);
-
     corfile_rm(csound, &csound->scstr);
 
     /* print stats only if musmon was actually run */

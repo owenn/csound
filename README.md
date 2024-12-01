@@ -11,13 +11,14 @@ downloaded from the relevant
 Selecting the latest develop build brings a page with the download
 artefacts at the bottom.
 
+
 Anyone seeking the latest 6.x version please checkout the csound6
 branch (or the master branch, containing the latest and final release
 of this version). Note that 6.x is EOL and no more releases of that
 version are planned.
 
 ![Build Status](https://github.com/csound/csound/actions/workflows/csound_builds.yml/badge.svg?branch=develop)
-<!--- ![Coverity Status](https://scan.coverity.com/projects/1822/badge.svg) --->
+
 A sound and music computing system.
 
 Csound is copyright (c) 1991-2024 The Csound Developers, see CONTRIBUTORS

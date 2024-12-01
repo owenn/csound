@@ -121,6 +121,7 @@ def runTest():
 	["test46.csd", "if-then with expression in boolean comparison"],
 	["test47.csd", "until loop and t-variables"],
 	["test48.csd", "expected failure with variable used before defined", 1],
+    ["test_instr_redefinition.csd", "expected failure with instr redefinition", 1],
 	["test_instr0_labels.csd", "test labels in instr0 space"],
 	["test_string.csd", "test string assignment and printing"],
 	["test_sprintf.csd", "test string assignment and printing"],
@@ -140,6 +141,7 @@ def runTest():
              "test expected failure with negative dimension size and array", 1],
 
 	["test_audio_in.csd", "test the parsing of the 'in' operator as opcode"],
+    
 
 	["test_empty_conditional_branches.csd", "tests that empty branches do not cause compiler issues"],
 	["test_empty_instr.csd", "tests that empty instruments do not cause compiler issues"],
@@ -169,6 +171,8 @@ def runTest():
         ["prints_number_no_crash.csd", "test prints does not crash when given a number arguments", 1],
         ["test_newlines_within_function_calls.csd", "test newlines allowed within function calls"],
         ["test_comma_newline.csd", "test commas followed by newlines"],
+        ["test_explicit_globals.csd", "test global declaration of explicit types"],
+        ["test_fail_mismatched_types.csd", "syntax error on mismatched type declaration", 1],        
 
     ["test_declare.csd", "test declare keyword (CS7)"],
     ["test_plusname.csd", "test +Name for instr name"],
@@ -183,6 +187,7 @@ def runTest():
     ["test_create_init_perf_delete.csd", "testing new instance opcodes"],
     ["test_complex_numbers.csd", "testing complex number operations"],
     ["test_schedule_named_instance.csd", "testing schedule with named instr instance"],
+    ["test_instr_type_var_new_compilation.csd", "testing schedule of named instr in new compilations"],
     ["test_ambiguous_opcall.csd", "test ambiguous opcall examples"],
     ]
 

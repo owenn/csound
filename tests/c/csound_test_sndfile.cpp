@@ -45,9 +45,11 @@ public:
 
 void *sfile_open(CSOUND *csound, const char *path, int32_t mode,
                  SFLIB_INFO *sfinfo) {
-  FILE *fp = fopen(path, mode == SFM_READ ? "r" : "w");
+  FILE *fp = fopen(path, mode == SFM_READ ? "rb" : "wb");
   if (fp != NULL) {
       sfile *file = (sfile *) csound->Calloc(csound, sizeof(sfile));
+      sfinfo->samplerate = (int32_t) csoundGetSr(csound);
+      sfinfo->channels = (int32_t) csoundGetNchnls(csound);
       file->fp = fp;
       file->sfinfo = sfinfo;
       return file;

@@ -76,9 +76,9 @@ int get_next_char(char *, int32_t, struct yyguts_t*);
    /* to avoid unused function errors */
 %option nounput
 
-IDENT           [a-zA-Z_][a-zA-Z0-9_]*
+IDENT           [a-zA-Z_][a-zA-Z0-9_]*(@global)?
 IDENTB          [a-zA-Z_][a-zA-Z0-9_]*\([ \t]*\n?
-TYPED_IDENTIFIER  [a-zA-Z_][a-zA-Z0-9_]*:[a-zA-Z_][a-zA-Z0-9_]*
+TYPED_IDENTIFIER  [a-zA-Z_][a-zA-Z0-9_]*(@global)?:[a-zA-Z_][a-zA-Z0-9_]*
 TYPED_IDENTIFIERB [a-zA-Z_][a-zA-Z0-9_]*:[a-zA-Z_][a-zA-Z0-9_]*\([ \t]*\n?
 XIDENT          0|[aijkftKOJVPopS\[\]]+
 INTGR           [0-9]+

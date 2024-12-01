@@ -18,8 +18,8 @@ instr 1
 
  // run at perf-time
   err2:k perf myInstance
-  glid:k expon 440, p3, 880
-         setp myInstance, 5, glid
+  slid:k expon 440, p3, 880
+         setp myInstance, 5, slid
 
   // run at deinit time
    delete myInstance 

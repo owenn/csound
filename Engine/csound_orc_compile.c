@@ -1009,7 +1009,7 @@ void free_instrtxt(CSOUND *csound, INSTRTXT *instrtxt) {
     csound->Free(csound, tmp->varName);
   }
 
-  csoundFreeVarPool(csound, ip->varPool);
+  csoundFreeVarPool(csound, ip->varPool);  
   csound->Free(csound, ip);
   if (UNLIKELY(csound->oparms->odebug))
     csound->Message(csound, Str("-- deleted instr from deadpool\n"));
@@ -1024,6 +1024,7 @@ void free_instrtxt(CSOUND *csound, INSTRTXT *instrtxt) {
 void add_to_deadpool(CSOUND *csound, INSTRTXT *instrtxt) {
   /* check current items in deadpool to see if they need deleting */
   int32_t i;
+  printf("%p \n", instrtxt);
   for (i = 0; i < csound->dead_instr_no; i++) {
     if (csound->dead_instr_pool[i] != NULL) {
       INSDS *active = csound->dead_instr_pool[i]->instance;
@@ -1262,6 +1263,28 @@ void named_instr_assign_numbers(CSOUND *csound, ENGINE_STATE *engineState) {
                        (char *)INSTR_NAME_FIRST);
 }
 
+/** unlink it from instrument chain and
+    NULL any references in the instrtxt list
+*/
+static void unlink_instrtxt(CSOUND *csound, INSTRTXT *instrtxt,ENGINE_STATE  *engineState) {
+  INSTRTXT *ip = &(engineState->instxtanchor);
+  INSTRTXT *prv = ip;
+  int i;
+  while ((ip = ip->nxtinstxt) != NULL) { /* unlink */
+    if(ip == instrtxt) {
+      csound->DebugMsg(csound, "unlink %p\n", instrtxt);
+      prv->nxtinstxt = ip->nxtinstxt;
+    }
+    prv = ip;
+  }
+  for (i = 0; i < engineState->maxinsno; i++) {
+    /* check for duplicate numbers and NULL them */
+    if (engineState->instrtxtp[i] == instrtxt) {
+      engineState->instrtxtp[i] = NULL;
+    }
+  }
+}
+
 /**
    Insert INSTRTXT into an engineState list of INSTRTXT's,
    checking to see if number is greater than number of pointers currently
@@ -1271,26 +1294,15 @@ void insert_instrtxt(CSOUND *csound, INSTRTXT *instrtxt, int32 instrNum,
                      ENGINE_STATE *engineState, int32_t merge) {
   int32_t i;
 
-  /* redefinition not allowed in the same compilation */
-  if(UNLIKELY(engineState->instrtxtp[instrNum] != NULL) &&
-     !merge) {
-      synterr(csound, Str("instr %d redefined in code:\n"
-                          "redefinition not allowed."), instrNum);
-      return;
-  }
-
   if (UNLIKELY(instrNum >= engineState->maxinsno)) {
     int32_t old_maxinsno = engineState->maxinsno;
-
     /* expand */
     while (instrNum >= engineState->maxinsno) {
       engineState->maxinsno += MAXINSNO;
     }
-
     engineState->instrtxtp = (INSTRTXT **)
       csound->ReAlloc(csound, engineState->instrtxtp,
                       (1 + engineState->maxinsno) * sizeof(INSTRTXT *));
-
     /* Array expected to be nulled so.... */
     for (i = old_maxinsno + 1; i <= engineState->maxinsno; i++) {
       engineState->instrtxtp[i] = NULL;
@@ -1298,17 +1310,23 @@ void insert_instrtxt(CSOUND *csound, INSTRTXT *instrtxt, int32 instrNum,
   }
 
   if (UNLIKELY(engineState->instrtxtp[instrNum] != NULL)) {
+    if(!merge) {
+      // redefinition in the same compilation
+      INSTRTXT *for_deletion = engineState->instrtxtp[instrNum];
+      csound->DebugMsg(csound, "delete instrument %d of %d: %p \n",
+                      instrNum, engineState->maxinsno, engineState->instrtxtp[instrNum]);
+      unlink_instrtxt(csound, for_deletion, engineState);
+      free_instrtxt(csound, for_deletion);
+    }
+    else {
     instrtxt->isNew = 1;
-
-    /* redefinition does not raise an error now, just a warning */
-    if (UNLIKELY(instrNum && csound->oparms->odebug))
-      csound->Warning(csound, Str("instr %" PRIi32 " redefined, "
-                                  "replacing previous definition"),
-                      instrNum);
+    /* redefinition of a previous compilation */
+    csound->DebugMsg(csound, Str("instr %" PRIi32 " redefined, "
+                                  "replacing previous definition"), instrNum);
     /* inherit active & maxalloc flags */
     instrtxt->active = engineState->instrtxtp[instrNum]->active;
     instrtxt->maxalloc = engineState->instrtxtp[instrNum]->maxalloc;
-
+    
     /* here we should move the old instrument definition into a deadpool
        which will be checked for active instances and freed when there are no
        further ones
@@ -1318,7 +1336,6 @@ void insert_instrtxt(CSOUND *csound, INSTRTXT *instrtxt, int32 instrNum,
       if (i != instrNum &&
           engineState->instrtxtp[i] == engineState->instrtxtp[instrNum]) {
         csound->Message(csound, "duplicate %d %d\n", i, instrNum);
-        // VL 26.05.2018
         // so fill this with the new instrument pointer
         engineState->instrtxtp[i] = instrtxt;
         goto end;
@@ -1329,26 +1346,25 @@ void insert_instrtxt(CSOUND *csound, INSTRTXT *instrtxt, int32 instrNum,
       if (active->actflg) {
         add_to_deadpool(csound, engineState->instrtxtp[instrNum]);
         break;
-      }
+      } 
       active = active->nxtinstance;
     }
-
     /* no active instances */
     /* instr0 is freed elsewhere */
     if (active == NULL && instrNum != 0) {
       if (UNLIKELY(csound->oparms->odebug))
         csound->Message(csound, Str("no active instances of instr %d\n"),
                         instrNum);
-      free_instrtxt(csound, engineState->instrtxtp[instrNum]);
+        free_instrtxt(csound, engineState->instrtxtp[instrNum]);
+    }
     }
   }
-end:
-
+ end:
   instrtxt->instance = instrtxt->act_instance = instrtxt->lst_instance = NULL;
   engineState->instrtxtp[instrNum] = instrtxt;
   if(csound->GetDebug(csound))
     csound->Message(csound, "instrument %d of %d: %p \n",
-              instrNum, engineState->maxinsno, instrtxt);
+                    instrNum, engineState->maxinsno, instrtxt);
 }
 
 void insert_opcodes(CSOUND *csound, OPCODINFO *opcodeInfo,

@@ -1024,7 +1024,6 @@ void free_instrtxt(CSOUND *csound, INSTRTXT *instrtxt) {
 void add_to_deadpool(CSOUND *csound, INSTRTXT *instrtxt) {
   /* check current items in deadpool to see if they need deleting */
   int32_t i;
-  printf("%p \n", instrtxt);
   for (i = 0; i < csound->dead_instr_no; i++) {
     if (csound->dead_instr_pool[i] != NULL) {
       INSDS *active = csound->dead_instr_pool[i]->instance;

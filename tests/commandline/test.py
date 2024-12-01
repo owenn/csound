@@ -121,6 +121,7 @@ def runTest():
 	["test46.csd", "if-then with expression in boolean comparison"],
 	["test47.csd", "until loop and t-variables"],
 	["test48.csd", "expected failure with variable used before defined", 1],
+    ["test_instr_redefinition.csd", "expected failure with instr redefinition", 1],
 	["test_instr0_labels.csd", "test labels in instr0 space"],
 	["test_string.csd", "test string assignment and printing"],
 	["test_sprintf.csd", "test string assignment and printing"],
@@ -140,6 +141,7 @@ def runTest():
              "test expected failure with negative dimension size and array", 1],
 
 	["test_audio_in.csd", "test the parsing of the 'in' operator as opcode"],
+    
 
 	["test_empty_conditional_branches.csd", "tests that empty branches do not cause compiler issues"],
 	["test_empty_instr.csd", "tests that empty instruments do not cause compiler issues"],
@@ -157,6 +159,7 @@ def runTest():
 	["test_polymorphic_udo.csd", "test polymorphic udo"],
 	["test_udo_a_array.csd", "test udo with a-array"],
 	["test_udo_2d_array.csd", "test udo with 2d-array"],
+
     ["test_udo_string_array_join.csd", "test udo with S[] arg returning S"],
     ["test_array_function_call.csd", "test synthesizing an array arg from a function-call"],
     ["test_explicit_types.csd", "test typed identifiers (i.e. signals:a[], sigLeft:a)"],
@@ -169,6 +172,8 @@ def runTest():
     ["test_newlines_within_function_calls.csd", "test newlines allowed within function calls"],
     ["test_comma_newline.csd", "test commas followed by newlines"],
     ["test_bool_with_explicit_type.csd", "test use of explicit type in bool expression"],
+    ["test_explicit_globals.csd", "test global declaration of explicit types"],
+    ["test_fail_mismatched_types.csd", "syntax error on mismatched type declaration", 1],        
     ["test_declare.csd", "test declare keyword (CS7)"],
     ["test_plusname.csd", "test +Name for instr name"],
     ["testnewline.csd", "test newline in statements"],
@@ -179,6 +184,7 @@ def runTest():
     ["test_create_instr.csd", "testing creating and scheduling instr"],
     ["test_complex_numbers.csd", "testing complex number operations"],
     ["test_schedule_named_instance.csd", "testing schedule with named instr instance"],
+    ["test_instr_type_var_new_compilation.csd", "testing schedule of named instr in new compilations"],
     ["test_ambiguous_opcall.csd", "test ambiguous opcall examples"],
     ]
 

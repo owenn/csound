@@ -1292,9 +1292,15 @@ static void unlink_instrtxt(CSOUND *csound, INSTRTXT *instrtxt,ENGINE_STATE  *en
 */
 void insert_instrtxt(CSOUND *csound, INSTRTXT *instrtxt, int32 instrNum,
                      ENGINE_STATE *engineState, int32_t merge) {
-  int32_t i;
+  if(!csound->oparms->redef && !merge &&
+     engineState->instrtxtp[instrNum] != NULL) {
+     synterr(csound, "instr %d redefinition not allowed.\n",
+            instrNum);
+     return;
+   }
 
   if (UNLIKELY(instrNum >= engineState->maxinsno)) {
+    int32_t i;
     int32_t old_maxinsno = engineState->maxinsno;
     /* expand */
     while (instrNum >= engineState->maxinsno) {
@@ -1319,6 +1325,7 @@ void insert_instrtxt(CSOUND *csound, INSTRTXT *instrtxt, int32 instrNum,
       free_instrtxt(csound, for_deletion);
     }
     else {
+    int32_t i;
     instrtxt->isNew = 1;
     /* redefinition of a previous compilation */
     csound->DebugMsg(csound, Str("instr %" PRIi32 " redefined, "

@@ -1601,6 +1601,8 @@ PUBLIC int32_t argdecode(CSOUND *csound, int32_t argc, const char **argv_)
     return 1;
 }
 
+void checkOptions(CSOUND *csound);
+
 PUBLIC int32_t csoundSetOption(CSOUND *csound, const char *opt){
     /* if already compiled and running, return */
     if (csound->engineStatus & CS_STATE_COMP) return 1;
@@ -1610,6 +1612,12 @@ PUBLIC int32_t csoundSetOption(CSOUND *csound, const char *opt){
       int32_t cnt = 0, ret;
       if((ret = setjmp(csound->exitjmp) != 0))
         return ret;
+
+      // check .cs7rc before setting any options
+      if(!csound->options_checked) {
+        checkOptions(csound);
+        csound->options_checked = 1;
+      }
       
       /* remove whitespace at start */
       while(*opt == ' ') opt++;
@@ -1638,6 +1646,7 @@ PUBLIC int32_t csoundSetOption(CSOUND *csound, const char *opt){
       ret = argdecode(csound, cnt, (const char **) args);
       mfree(csound, args);
       mfree(csound, options);
+
       return ret ? 0 : 1;
     }
 }

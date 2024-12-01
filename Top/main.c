@@ -43,7 +43,7 @@ CS_NORETURN void    dieu(CSOUND *, char *, ...);
  void csoundInputMessageInternal(CSOUND *csound, const char *message);
  int32_t csoundCompileOrcInternal(CSOUND *csound, const char *str, int32_t async);
 
-static void checkOptions(CSOUND *csound)
+void checkOptions(CSOUND *csound)
 {
     const char  *csrcname;
     const char  *home_dir;
@@ -421,10 +421,11 @@ PUBLIC int32_t csoundStart(CSOUND *csound) // DEBUG
     OPARMS  *O = csound->oparms;
     int32_t     n;
 
-    /* if a CSD was not used, check options */
-    if (csound->csdname == NULL)
+    /* if a CSD was not used or options were not checked, check options */
+    if (csound->csdname == NULL && !csound->options_checked) {
           checkOptions(csound);
-
+     }
+    
     if (UNLIKELY(csound->engineStatus & CS_STATE_COMP)){
       csound->Message(csound, Str("Csound is already started, call csoundReset()\n"
                                   "before starting again.\n"));

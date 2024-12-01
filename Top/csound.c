@@ -1110,6 +1110,7 @@ static const CSOUND cenviron_ = {
   0,              /* message_string_queue_wp */
   NULL,           /* message_string_queue */
   0,              /* io_initialised */
+  0,              /* options_checked */
   NULL,           /* op */
   0,              /* mode */
   NULL,           /* opcodedir */

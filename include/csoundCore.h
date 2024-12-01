@@ -2149,6 +2149,7 @@ static inline double PHMOD1(double p) {
     unsigned long message_string_queue_wp;
     message_string_queue_t *message_string_queue;
     int32_t io_initialised;
+    int32_t options_checked;
     char *op;
     int32_t  mode;
     char *opcodedir;

@@ -9,7 +9,7 @@
 # include <netinet/in.h>
 # include <arpa/inet.h>
 #endif
-#if defined (WIN32)
+#if defined (WIN32) && !defined(__CYGWIN__)
 # include <Windows.h>
 #else
 # include "unistd.h"

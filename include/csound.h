@@ -310,9 +310,7 @@ extern "C" {
     CSOUND_PVS_CHANNEL =      4,
     CSOUND_VAR_CHANNEL =      5,
     CSOUND_ARRAY_CHANNEL =      6,
-
     CSOUND_CHANNEL_TYPE_MASK =    15,
-
     CSOUND_INPUT_CHANNEL =       16,
     CSOUND_OUTPUT_CHANNEL =       32
   } controlChannelType;
@@ -704,23 +702,10 @@ extern "C" {
   PUBLIC void csoundReset(CSOUND *);
   /** @}*/
 
-  /** @defgroup RTAUDIOIO Realtime Audio I/O
+  /** @defgroup AUDIOIO Audio I/O
    *
    *  @{ */
-
-  /**
-   * Calling this function after csoundCreate()
-   * and before the start of performance will disable all default
-   * handling of sound I/O by the Csound library via its audio backend module.
-   * Host application should in this case use the spin/spout buffers directly.
-   */
-  PUBLIC void csoundSetHostAudioIO(CSOUND *);
-
-  /**
-   *  Sets the current RT audio module
-   */
-  PUBLIC void csoundSetRTAudioModule(CSOUND *csound, const char *module);
-
+  
   /**
    * Returns the address of the Csound audio input working buffer (spin).
    * Enables external software to write audio into Csound before calling
@@ -736,84 +721,7 @@ extern "C" {
   PUBLIC const MYFLT *csoundGetSpout(CSOUND *csound);
 
   /** @}*/
-  /** @defgroup RTMIDI Realtime Midi I/O
-   *
-   *  @{ */
-
-  /**
-   * Calling this function after csoundCreate()
-   * and before the start of performance to implement
-   * MIDI via the callbacks below.
-   */
-  PUBLIC void csoundSetHostMIDIIO(CSOUND *csound);
-
-  /**
-   *  Sets the current MIDI IO module
-   */
-  PUBLIC void csoundSetMIDIModule(CSOUND *csound, const char *module);
-
-
-  /**
-   * Sets callback for opening real time MIDI input.
-   */
-  PUBLIC void csoundSetExternalMidiInOpenCallback(CSOUND *,int32_t (*func)
-                                                  (CSOUND *,void **userData,
-                                                   const char *devName));
-
-  /**
-   * Sets callback for reading from real time MIDI input.
-   */
-  PUBLIC void csoundSetExternalMidiReadCallback(CSOUND *,int32_t (*func)
-                                                (CSOUND *, void *userData,
-                                                 unsigned char *buf,
-                                                 int32_t nBytes));
-
-  /**
-   * Sets callback for closing real time MIDI input.
-   */
-  PUBLIC void csoundSetExternalMidiInCloseCallback(CSOUND *,int32_t (*func)
-                                                   (CSOUND *,void *userData));
-
-  /**
-   * Sets callback for opening real time MIDI output.
-   */
-  PUBLIC void csoundSetExternalMidiOutOpenCallback(CSOUND *,int32_t (*func)
-                                                   (CSOUND *,void **userData,
-                                                    const char *devName));
-
-  /**
-   * Sets callback for writing to real time MIDI output.
-   */
-  PUBLIC void csoundSetExternalMidiWriteCallback(CSOUND *, int32_t (*func)
-                                                 (CSOUND *,void *userData,
-                                                  const unsigned char *buf,
-                                                  int32_t nBytes));
-
-  /**
-   * Sets callback for closing real time MIDI output.
-   */
-  PUBLIC void csoundSetExternalMidiOutCloseCallback(CSOUND *,
-                                                    int32_t (*func)(CSOUND *,
-                                                                void *userData));
-
-  /**
-   * Sets callback for converting MIDI error codes to strings.
-   */
-  PUBLIC void csoundSetExternalMidiErrorStringCallback(CSOUND *,
-                                                       const char *(*func)(int32_t));
-
-
-  /**
-   * Sets a function that is called to obtain a list of MIDI devices.
-   * This should be set by IO plugins, and should not be used by hosts.
-   * (See csoundGetMIDIDevList())
-   */
-  PUBLIC void csoundSetMIDIDeviceListCallback(CSOUND *csound,
-                                              int32_t (*mididevlist__)
-                                              (CSOUND *,CS_MIDIDEVICE *list,
-                                               int32_t isOutput));
-
-  /** @}*/
+ 
 
   /** @defgroup MESSAGES Csound Messages and Text
    *
@@ -1404,9 +1312,13 @@ extern "C" {
                                  int32_t (*perf)(CSOUND *, void *),
                                  int32_t (*deinit)(CSOUND *, void *));
 
-  /** @}*/
-
+  /** @}*/  
 #endif  /* !CSOUND_CSDL_H */
+
+  /* realtime audio module functions */
+#include "csound_rtaudio.h"
+  /* realtime MIDI module functions */
+#include "csound_rtmidi.h"
   /* typedefs, macros, and interface functions for configuration variables */
 #include "cfgvar.h"
   /* message attribute definitions for csoundMessageS() and csoundMessageV() */

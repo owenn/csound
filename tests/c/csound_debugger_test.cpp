@@ -9,6 +9,10 @@
 #include "csdebug.h"
 #include "gtest/gtest.h"
 
+
+
+extern "C"  void csoundInputMessage(CSOUND *csound, const char * sc);
+
 //#define csoundInputMessage(a,b) csoundEventString(a,b,0)
 
 class DebuggerTests : public ::testing::Test {

@@ -30,6 +30,9 @@ if(BUILD_TESTS)
 
     target_compile_features(unittests PUBLIC cxx_std_17)
 
+    target_include_directories(unittests PRIVATE ${libcsound_private_include_dirs})
+    target_include_directories(unittests PUBLIC ${libcsound_public_include_dirs})
+
     target_link_libraries(unittests
         PRIVATE
             GTest::gtest_main

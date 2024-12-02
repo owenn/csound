@@ -194,7 +194,7 @@ extern "C" {
   } AUXASYNC;
 
   /**@}*/
-  /** @name Standard data type structures */
+  /** @name Standard data types */
   /**@{ */
   
   /** 
@@ -238,8 +238,8 @@ extern "C" {
     size_t   allocated; /* size of allocated data */
   };
 
-  /*
-   *  INSTR REF Type
+  /** 
+   *  Type definition for instr definition ref
    */
   typedef struct instrRef {
     INSTRTXT *instr;
@@ -255,8 +255,6 @@ extern "C" {
     size_t size;        // total allocated size
     int64_t timestamp;  // used internally for updates
   };
-
-#define MAX_STRINGDAT_SIZE 0xFFFFFFFF   
   
   /**
    * Type definition for complex numbers
@@ -267,7 +265,7 @@ extern "C" {
     int32_t isPolar;
   } COMPLEXDAT;
 
-  /* 
+  /** 
   * Type definition for instr instance ref
   */
   typedef struct instanceref {

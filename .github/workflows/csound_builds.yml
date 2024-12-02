@@ -340,7 +340,9 @@ jobs:
         run: cmake --build build --target csdtests
 
       - name: Run unit test framework
-        run: build\tests\c\Debug\unittests.exe
+        run: |
+            cd build\tests\c\Debug
+            unittests
 
       - name: Acquire Csound manual
         if: github.ref == 'refs/heads/develop'

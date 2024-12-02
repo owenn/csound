@@ -37,6 +37,8 @@
 #include "bus.h"
 #include "namedins.h"
 
+int32_t *csoundGetChannelLock(CSOUND *csound, const char *name);
+
 /* For sensing opcodes */
 #if defined(__unix) || defined(__unix__) || defined(__MACH__)
 #  ifdef HAVE_SYS_TIME_H

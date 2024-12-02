@@ -1,4 +1,4 @@
-#if defined(WIN32)
+#if defined(WIN32) && !defined(__MINGW32__)
 # include <Windows.h>
 #else
 # include "unistd.h"

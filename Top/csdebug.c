@@ -25,6 +25,8 @@
 
 #include "csdebug.h"
 
+int32_t kperf_nodebug(CSOUND *csound);
+int32_t kperf_debug(CSOUND *csound);  
 debug_instr_t *csoundDebugGetCurrentInstrInstance(CSOUND *csound);
 debug_opcode_t *csoundDebugGetCurrentOpcodeList(CSOUND *csound);
 void csoundDebugFreeOpcodeList(CSOUND *csound, debug_opcode_t *opcode_list);

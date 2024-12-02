@@ -242,11 +242,11 @@ CSOUND *csoundCreateWasi() {
 // same as csoundReset but also loads
 // opcodes which need re-initialization to
 // be callable (aka static_modules)
+// NB: csoundCleanup has been removed from API for 7.0
 int csoundResetWasi(CSOUND *csound) {
-  int cleanResult = csoundCleanup(csound);
   csoundReset(csound);
   csoundSetMidiCallbacks(csound);
-  return cleanResult;
+  return CSOUND_SUCCESS;
 }
 
 int isRequestingRtMidiInput(CSOUND *csound) {

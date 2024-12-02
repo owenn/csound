@@ -5,8 +5,8 @@ cmake_minimum_required(VERSION 3.20)
     find_package(GTest CONFIG REQUIRED)
  else()
     find_package(GTest)
-    check_deps(BUILD_TESTS BUILD_STATIC_LIBRARY)
  endif()
+    check_deps(BUILD_TESTS BUILD_STATIC_LIBRARY)
 endif()
 
 if(BUILD_TESTS)
@@ -29,6 +29,9 @@ if(BUILD_TESTS)
     )
 
     target_compile_features(unittests PUBLIC cxx_std_17)
+
+    target_include_directories(${CSOUNDLIB} PRIVATE ${libcsound_private_include_dirs})
+    target_include_directories(${CSOUNDLIB} PUBLIC ${libcsound_public_include_dirs})
 
     target_link_libraries(unittests
         PRIVATE

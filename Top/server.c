@@ -37,7 +37,7 @@
 #include <arpa/inet.h>
 #endif
 
-
+extern int32_t *csoundGetChannelLock(CSOUND *csound, const char *name);
 
 typedef struct {
   int32_t port;

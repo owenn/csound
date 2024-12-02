@@ -47,7 +47,6 @@ static void lgbuild(CSOUND *, INSTRTXT *, char *, int32_t inarg,
                     ENGINE_STATE *engineState);
 void print_tree(CSOUND *, char *, TREE *);
 void close_instrument(CSOUND *csound, ENGINE_STATE *engineState, INSTRTXT *ip);
-char argtyp2(char *s);
 void debugPrintCsound(CSOUND *csound);
 void named_instr_assign_numbers(CSOUND *csound, ENGINE_STATE *engineState);
 int32_t named_instr_alloc(CSOUND *csound, char *s, INSTRTXT *ip, int32 insno,
@@ -322,7 +321,6 @@ OPTXT *create_opcode(CSOUND *csound, TREE *root, INSTRTXT *ip,
     tp->outlist->count = 0;
     tp->inlist = (ARGLST *)csound->Malloc(csound, sizeof(ARGLST));
     tp->inlist->count = 0;
-    tp->pftype = '_';
 
     break;
   case LABEL_TOKEN:
@@ -348,8 +346,6 @@ OPTXT *create_opcode(CSOUND *csound, TREE *root, INSTRTXT *ip,
     if (UNLIKELY(PARSER_DEBUG))
       csound->Message(csound, "create_opcode: Found node for opcode %s\n",
                       root->value->lexeme);
-
-    /* replace opcode if needed */
     /* INITIAL SETUP */
     tp->oentry = (OENTRY *)root->markup;
     tp->opcod = strsav_string(csound, engineState, tp->oentry->opname);
@@ -395,8 +391,6 @@ OPTXT *create_opcode(CSOUND *csound, TREE *root, INSTRTXT *ip,
     }
     /* VERIFY ARG LISTS MATCH OPCODE EXPECTED TYPES */
     {
-
-      OENTRY *ep = tp->oentry;
       int32_t argcount = 0;
       for (outargs = root->left; outargs != NULL; outargs = outargs->next) {
         if (outargs->type == STRUCT_EXPR) {
@@ -425,23 +419,6 @@ OPTXT *create_opcode(CSOUND *csound, TREE *root, INSTRTXT *ip,
         }
         tp->outArgCount++;
 
-      }
-      if (root->left != NULL) {      /* pftype defined by outarg */
-        if (root->left->type == STRUCT_EXPR) {
-          tp->pftype = '_';
-        } else {
-          tp->pftype = argtyp2( root->left->value->lexeme);
-        }
-      }
-      else {                            /*    else by 1st inarg     */
-        if (root->right != NULL) {
-          if (ep->intypes[0] != 'l') {     /* intype defined by 1st inarg */
-            tp->pftype = argtyp2( tp->inlist->arg[0]);
-          }
-          else  {
-            tp->pftype = 'l';          /*   (unless label)  */
-          }
-        }
       }
     }
     break;
@@ -1843,28 +1820,26 @@ if (engineState != &csound->engineState) {
   /* first compilation */
   insert_opcodes(csound, csound->opcodeInfo, engineState);
   ip = engineState->instxtanchor.nxtinstxt;
-  bp = (OPTXT *)ip;
-  while (bp != (OPTXT *)NULL && (bp = bp->nxtop) != NULL) {
-    /* chk instr 0 for illegal perfs */
-    int32_t thread;
-    OENTRY *oentry = bp->t.oentry;
-    if (strcmp(oentry->opname, "endin") == 0)
-      break;
-    if (strcmp(oentry->opname, "$label") == 0)
-      continue;
-    if (PARSER_DEBUG)
-      csound->DebugMsg(csound, "Instr 0 check on opcode=%s\n", bp->t.opcod);
-    /* VL: now the check is simply for oentry->perf, which is the
-       only condition possible for perf-time code 
-    */
-    if (UNLIKELY(oentry->perf  != NULL ||
-                 (oentry->init == NULL && bp->t.pftype != 'b'))) {
-      thread =  oentry->init && oentry->perf ? 3 : (oentry->init ? 1 : 2);
-      csound->DebugMsg(csound, "***opcode=%s thread=%d",
-                       bp->t.opcod, thread);
-      csound->DebugMsg(csound,
-                      Str("%s: perf-time code in global space, ignored"),
-                      oentry->opname);
+  /* check for perf opcode in instr0 */
+  if(csoundGetDebug(csound)) {
+    bp = (OPTXT *)ip;
+    while (bp != (OPTXT *)NULL && (bp = bp->nxtop) != NULL) {
+      OENTRY *oentry = bp->t.oentry;
+      if (strcmp(oentry->opname, "endin") == 0)
+        break;
+      if (strcmp(oentry->opname, "$label") == 0)
+        continue;
+      if (PARSER_DEBUG)
+        csound->DebugMsg(csound, "Instr 0 check on opcode=%s\n", bp->t.opcod);
+      /* VL: now the check is simply for oentry->perf, which is the
+         only condition possible for perf-time code 
+      */
+      if (UNLIKELY(oentry->perf  != NULL)) {
+        csound->DebugMsg(csound,
+                         Str("%s: perf-time code in global space, ignored"),
+                         oentry->opname);
+      }
+
     }
   }
 
@@ -2183,44 +2158,6 @@ static ARG *createArg(CSOUND *csound, INSTRTXT *ip, char *s,
     }
   }
   return arg;
-}
-/* find arg type:  d, w, a, k, i, c, p, r, S, B, b, t 
-    also set lgprevdef if !c && !p && !S */
-char argtyp2(char *s) {
-  char c = *s;            
-  /* trap this before parsing for a number! 
-   * two situations: defined at header level: 0dbfs = 1.0
-   *  and returned as a value:  idb = 0dbfs
-   */
-  if ((c >= '1' && c <= '9') || c == '.' || c == '-' || c == '+' ||
-      (c == '0' && strcmp(s, "0dbfs") != 0))
-    return ('c'); /* const */
-  if (pnum(s) >= 0)
-    return ('p'); /* pnum */
-  if (c == '"')
-    return ('S'); /* quoted String */
-  if (strcmp(s, "sr") == 0 || strcmp(s, "kr") == 0 || strcmp(s, "0dbfs") == 0 ||
-      strcmp(s, "nchnls_i") == 0 || strcmp(s, "ksmps") == 0 ||
-      strcmp(s, "nchnls") == 0)
-    return ('r'); /* rsvd */
-  if (c == 'w')   /* N.B. w NOT YET #TYPE OR GLOBAL */
-    return (c);
-  if (c == '#')
-    c = *(++s);
-  if (c == 'g')
-    c = *(++s);
-  if (c == '[') {
-    while (c == '[') {
-      c = *(++s);
-    }
-  }
-  if (c == 't') { /* Support legacy t-vars by mapping to k subtypes */
-    return 'k';
-  }
-  if (strchr("akiBbfSt", c) != NULL)
-    return (c);
-  else
-    return ('?');
 }
 
 /* For diagnostics map file name or macro name to an index */

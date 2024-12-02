@@ -103,7 +103,6 @@ extern "C" {
     uint32_t        inArgCount;
     ARG             *outArgs;
     uint32_t       outArgCount;
-    char            pftype;         /* Type of output argument (k,a etc) */
   } TEXT;
 
   /**

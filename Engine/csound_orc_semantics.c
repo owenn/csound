@@ -43,7 +43,6 @@ CS_VAR_POOL *find_global_annotation(char *varName, TYPE_TABLE* typeTable);
 extern char *csound_orcget_text ( void *scanner );
 static int32_t is_label(char* ident, CONS_CELL* labelList);
 extern uint64_t csound_orcget_locn(void *);
-extern  char argtyp2(char*);
 extern  int32_t tree_arg_list_count(TREE *);
 void print_tree(CSOUND *, char *, TREE *);
 char *remove_type_quoting(CSOUND *csound, const char *outype);
@@ -563,7 +562,7 @@ char* get_arg_type2(CSOUND* csound, TREE* tree, TYPE_TABLE* typeTable)
 
     }
   }
-
+ 
   switch(tree->type) {
   case NUMBER_TOKEN:
   case INTEGER_TOKEN:
@@ -1268,14 +1267,11 @@ char* get_arg_string_from_tree(CSOUND* csound, TREE* tree,
 
   while (current != NULL) {
     char* argType = get_arg_type2(csound, current, typeTable);
-
     if (argType == NULL) {
       // if we failed to find argType, exit from parser
       csound->Die(csound, "Could not parse type for argument");
     } else {
-
       argType = convert_internal_to_external(csound, argType);
-
       argsLen += strlen(argType);
       argTypes[index++] = argType;
     }
@@ -3340,18 +3336,9 @@ void handle_optional_args(CSOUND *csound, TREE *l)
   }
 }
 
-char tree_argtyp(CSOUND *csound, TREE *tree) {
-  IGN(csound);
-  if (tree->type == INTEGER_TOKEN || tree->type == NUMBER_TOKEN) {
-    return 'i';
-  }
-  return argtyp2( tree->value->lexeme);
-}
-
 
 CS_VARIABLE *addGlobalVariable(CSOUND *csound, ENGINE_STATE *engineState,
                                CS_TYPE *type, char *name, void *typeArg);
-
 void add_instr_variable(CSOUND *csound,  TREE *x) {
   /* add instr variable to engine varpool 
      called by bison when instr ids are found

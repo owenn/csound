@@ -340,7 +340,7 @@ jobs:
         run: cmake --build build --target csdtests
 
       - name: Run unit test framework
-        run: cmake --build build --target RUN_TESTS --config Release
+        run: build\tests\c\Debug\unittests.exe
 
       - name: Acquire Csound manual
         if: github.ref == 'refs/heads/develop'
@@ -384,6 +384,7 @@ jobs:
 
   windows_build_mingw:
     name: Windows build (mingw/vcpkg)
+    if: github.ref == 'refs/heads/develop' || vars.ENABLE_CROSS_COMPILERS == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code

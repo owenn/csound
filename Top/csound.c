@@ -73,6 +73,20 @@
 #include "csdebug.h"
 #include <time.h>
 
+  int32_t kperf_nodebug(CSOUND *csound);
+  uint32_t csoundGetNchnls(CSOUND *);
+  uint32_t csoundGetNchnlsInput(CSOUND *csound);
+  long csoundGetInputBufferSize(CSOUND *);
+  long csoundGetOutputBufferSize(CSOUND *);
+  void *csoundGetNamedGens(CSOUND *);
+  int32_t *csoundGetChannelLock(CSOUND *csound, const char *name);
+  int32_t csoundCompileCsd(CSOUND *csound, const char *csd_filename);
+  int32_t csoundCompileCsdText(CSOUND *csound, const char *csd_text);
+  int32_t csoundCleanup(CSOUND *);
+  void csoundInputMessage(CSOUND *csound, const char * sc);
+  int32_t csoundScoreEvent(CSOUND *, char type, const MYFLT *pFields,
+                        long numFields);
+
 extern void allocate_message_queue(CSOUND *csound);
 int32_t  playopen_dummy(CSOUND *, const csRtAudioParams *parm);
 void rtplay_dummy(CSOUND *, const MYFLT *outBuf, int32_t nbytes);
@@ -316,14 +330,14 @@ PUBLIC void csoundSetSndfileCallbacks(CSOUND *csound, SNDFILE_CALLBACKS *p){
       p->sndfileWriteSamples : sndfileWriteSamples;
     csound->SndfileReadSamples = p->sndfileReadSamples ?
       p->sndfileReadSamples : sndfileReadSamples;
-    csound->SndfileSeek =  csound->SndfileSeek ?
-      csound->SndfileSeek : sndfileSeek;
-    csound->SndfileSetString = csound->SndfileSetString ?
-      csound->SndfileSetString : sndfileSetString;
-    csound->SndfileStrError = csound->SndfileStrError?
-      csound->SndfileStrError : sndfileStrError;
-    csound->SndfileCommand = csound->SndfileCommand?
-      csound->SndfileCommand :sndfileCommand;
+    csound->SndfileSeek =  p->sndfileSeek ?
+      p->sndfileSeek : sndfileSeek;
+    csound->SndfileSetString = p->sndfileSetString ?
+      p->sndfileSetString : sndfileSetString;
+    csound->SndfileStrError = p->sndfileStrError?
+      p->sndfileStrError : sndfileStrError;
+    csound->SndfileCommand = p->sndfileCommand?
+      p->sndfileCommand : sndfileCommand;
   }
 }
 
@@ -624,9 +638,12 @@ static const CSOUND cenviron_ = {
   cs_strtod,
   cs_sprintf,
   cs_sscanf,
+  /* space for API expansion */
   {
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    NULL, NULL, NULL
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
   },
   /* ------- private data (not to be used by hosts or externals) ------- */
   /* callback function pointers */
@@ -655,7 +672,8 @@ static const CSOUND cenviron_ = {
   midi_dev_list_dummy,
   csoundDoCallback_,  /*  doCsoundCallback    */
   defaultCsoundYield, /* csoundInternalYieldCallback_*/
-  /* end of callbacks */
+  kperf_nodebug,  /* current kperf function - nodebug by default */
+  (void (*)(CSOUND *csound, int32_t attr, const char *str)) NULL,/* message string callback */
   (void (*)(CSOUND *)) NULL,                      /*  spinrecv    */
   (void (*)(CSOUND *)) NULL,                      /*  spoutran    */
   (int32_t (*)(CSOUND *, MYFLT *, int32_t)) NULL,         /*  audrecv     */
@@ -1053,9 +1071,6 @@ static const CSOUND cenviron_ = {
   NULL,           /* multiThreadedDag */
   NULL,           /* barrier1 */
   NULL,           /* barrier2 */
-  NULL,           /* pointer1 was global_var_lock_root */
-  NULL,           /* pointer2 was global_var_lock_cache */
-  0,              /* int1 was global_var_lock_count */
   /* statics from cs_par_orc_semantic_analysis */
   NULL,           /* instCurr */
   NULL,           /* instRoot */
@@ -1090,7 +1105,6 @@ static const CSOUND cenviron_ = {
   0,              /* modules loaded */
   -1,             /* audio system sr */
   0,              /* csdebug_data */
-  kperf_nodebug,  /* current kperf function - nodebug by default */
   0,              /* which score parser */
   0,              /* print_version */
   1,              /* inZero */
@@ -1106,7 +1120,6 @@ static const CSOUND cenviron_ = {
   0,              /* alloc_queue_wp */
   SPINLOCK_INIT,  /* alloc_spinlock */
   NULL,           /* init_event */
-  NULL,           /* message string callback */
   NULL,           /* message_string */
   0,              /* message_string_queue_items */
   0,              /* message_string_queue_wp */

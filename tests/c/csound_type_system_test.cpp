@@ -33,7 +33,6 @@ public:
 
     virtual void TearDown ()
     {
-        csoundCleanup (csound);
         csoundDestroyMessageBuffer (csound);
         csoundDestroy (csound);
         csound = nullptr;

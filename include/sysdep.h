@@ -37,6 +37,13 @@ typedef void *locale_t;
     #define B64BIT
 #endif
 
+#ifndef __cplusplus
+#include <stdbool.h>
+#endif
+#if defined(__MACH__) || defined(__FreeBSD__) || defined(__DragonFly__)
+#include <xlocale.h>
+#endif
+
 #ifdef HAVE_GCC3
 #  undef HAVE_GCC3
 #endif
@@ -554,6 +561,21 @@ typedef char spin_lock_t;
 typedef int32_t spin_lock_t;
 #define SPINLOCK_INIT 0
 #endif
+
+#if (defined(__MACH__) || defined(ANDROID) || defined(NACL) \
+  || defined(__CYGWIN__) || defined(__HAIKU__))
+#include <pthread.h>
+#define BARRIER_SERIAL_THREAD (-1)
+  typedef struct {
+    pthread_mutex_t mut;
+    pthread_cond_t cond;
+    uint32_t count, max, iteration;
+  } barrier_t;
+#ifndef PTHREAD_BARRIER_SERIAL_THREAD
+#define pthread_barrier_t barrier_t
+#endif /* PTHREAD_BARRIER_SERIAL_THREAd */
+#endif /* __MACH__ */
+
 
 /* The ignore_value() macro is taken from GNULIB ignore-value.h,
    licensed under the terms of the LGPLv2+

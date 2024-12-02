@@ -28,6 +28,12 @@
 #include "cs_par_orc_semantics.h"
 //#include "cs_par_dispatch.h"
 
+extern const uint32_t csPlayScoMask;
+
+
+extern int32_t csoundCompileCsd(CSOUND *csound, const char *csd_filename);
+extern int32_t csoundCompileCsdText(CSOUND *csound, const char *csd_text);
+extern void csoundInputMessage(CSOUND *csound, const char * sc);
 extern void allocate_message_queue(CSOUND *csound);
 CS_NORETURN void    dieu(CSOUND *, char *, ...);
   int32_t     argdecode(CSOUND *, int32_t,  const char **);

@@ -45,6 +45,7 @@ extern "C" {
     int32_t     flags;
   } opcodeListEntry;
 
+  
   /** @defgroup MISCELLANEOUS Miscellaneous functions
    *
    *  @{ */

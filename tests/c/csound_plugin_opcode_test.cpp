@@ -5,12 +5,10 @@
  * Created on Nov 17, 2024
  */
 
-#define __BUILDING_LIBCSOUND
-
-
 #include <stdio.h>
 #include <stdlib.h>
-#include "csoundCore.h"
+#include "csound.h"
+#include "csdl.h"
 #include "gtest/gtest.h"
 
 class PluginTests : public ::testing::Test {
@@ -67,7 +65,7 @@ int32_t opcode_perf(CSOUND *csound, OPC *p) {
 }
 
 int32_t opcode_deinit(CSOUND *csound, OPC *p) {
-  p->ival = FL(0.0);
+  p->ival = (MYFLT) 0;
   return OK;
 }
 

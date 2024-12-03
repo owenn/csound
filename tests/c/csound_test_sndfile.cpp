@@ -5,12 +5,12 @@
  * Created on Nov 17, 2024
  */
 
-#define __BUILDING_LIBCSOUND
-
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "csoundCore.h"
+#include "csound.h"
+#include "csound_files.h"
+#include "csdl.h"
 #include "gtest/gtest.h"
 
 class SndfileTests : public ::testing::Test {

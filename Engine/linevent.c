@@ -364,15 +364,26 @@ static void sensLine(CSOUND *csound, void *userData)
             }
             sstrp[n] = '\0';
             {
+#ifdef USE_DOUBLE              
+              int32_t sel = (byte_order()+1)&1;
               union {
                 MYFLT d;
-                int32 i;
+                int32 i[2];
               } ch;
-              ch.d = SSTRCOD; ch.i += scnt++;
+              ch.d = SSTRCOD; ch.i[sel] += scnt++;
               e.p[pcnt] = ch.d;           /* set as string with count */
+#else
+              union {
+                MYFLT d;
+                int32 i[2];
+              } ch;
+              ch.d = SSTRCOD; ch.i[sel] += scnt++;
+              e.p[pcnt] = ch.d;           /* set as string with count */
+#endif
             }
             e.scnt = scnt;
-            //printf("string: %s\n", sstrp);
+            
+            // printf("string: %s\n", sstrp);
             continue;
           }
           if (UNLIKELY(!(isdigit(c) || c == '+' || c == '-' || c == '.')))

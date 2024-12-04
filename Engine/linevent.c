@@ -375,9 +375,9 @@ static void sensLine(CSOUND *csound, void *userData)
 #else
               union {
                 MYFLT d;
-                int32 i[2];
+                int32 i;
               } ch;
-              ch.d = SSTRCOD; ch.i[sel] += scnt++;
+              ch.d = SSTRCOD; ch.i += scnt++;
               e.p[pcnt] = ch.d;           /* set as string with count */
 #endif
             }

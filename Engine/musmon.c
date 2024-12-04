@@ -1384,6 +1384,7 @@ int32_t insert_score_event_at_sample(CSOUND *csound, EVTBLK *evt, int64_t time_o
     else if (evt->strarg != NULL && IsStringCode(p[1])) {
       MYFLT n = named_instr_find(csound, evt->strarg);
       p[1] = n;
+      evt->strarg += strlen(evt->strarg)+1;
       i =(int32_t) n;
       if (n<0) {i= -i;}
     }

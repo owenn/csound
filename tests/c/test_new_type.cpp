@@ -7,10 +7,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "gtest/gtest.h"
 #include "csound.h"
 #include "csdl.h"
 #include "csound_type_system.h"
-#include "gtest/gtest.h"
+
 
 class NewTypeTests : public ::testing::Test {
 public:

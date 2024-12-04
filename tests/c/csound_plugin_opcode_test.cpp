@@ -7,9 +7,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "gtest/gtest.h"
 #include "csound.h"
 #include "csdl.h"
-#include "gtest/gtest.h"
+
 
 class PluginTests : public ::testing::Test {
 public:

@@ -2147,15 +2147,21 @@ static ARG *createArg(CSOUND *csound, INSTRTXT *ip, char *s,
             csoundFindVariableWithName(csound, ip->varPool, s))) {
     arg->type = ARG_LOCAL;
     arg->argPtr = csoundFindVariableWithName(csound, ip->varPool, s);
-  } else if (c == 'g' || (c == '#' && *(s + 1) == 'g') ||
-             csoundFindVariableWithName(csound, csound->engineState.varPool,
+  }
+  /* now global vars are searched for */
+  else if(csoundFindVariableWithName(csound, engineState->varPool,
                                         s) != NULL) {
-    // FIXME - figure out why string pool searched with gexist
-    //|| string_pool_indexof(csound->engineState.stringPool, s) > 0) {
     arg->type = ARG_GLOBAL;
-    // VL 20.10.24 treat global args in the same way as local args
     setupArgForVarName(csound, arg, engineState->varPool, s);
-  } else {
+    }
+    else if(csoundFindVariableWithName(csound, csound->engineState.varPool,
+                                       s) != NULL) {
+    arg->type = ARG_GLOBAL;
+    setupArgForVarName(csound, arg, csound->engineState.varPool, s);  
+    
+  }
+  /* otherwise we have a local argument */
+  else {
     arg->type = ARG_LOCAL;
     setupArgForVarName(csound, arg, ip->varPool, s);
     if (arg->argPtr == NULL) {

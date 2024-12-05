@@ -177,6 +177,7 @@ def runTest():
     ["test_declare.csd", "test declare keyword (CS7)"],
     ["test_plusname.csd", "test +Name for instr name"],
     ["testnewline.csd", "test newline in statements"],
+    ["test_string_in_event.csd", "test multiple strings in realtime event"],
     ["testmidichannels.csd", "test use of mapped multiport channels"],
     ["test_max_table_len.csd", "test max table length"],
     ["test_instr_type.csd", "test instr type and variables"],

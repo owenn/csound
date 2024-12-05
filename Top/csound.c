@@ -24,10 +24,6 @@
  *
  */
 
-// #ifdef __cplusplus
-// extern "C" {
-// #endif
-
 #if defined(HAVE_UNISTD_H) || defined(__unix) || defined(__unix__)
 #include <unistd.h>
 #endif
@@ -306,6 +302,62 @@ static int32_t sndfileCommand(CSOUND *csound, void *handle, int32_t cmd,
   return sflib_command(handle, cmd, data, datasize);
 }
 
+// stubs
+
+static int64_t sndfileWrite_stub(CSOUND *csound, void *h, MYFLT *p, int64_t frames) {
+  return 0;
+}
+
+static int64_t sndfileRead_stub(CSOUND *csound, void *h, MYFLT *p, int64_t frames) {
+  return 0;
+}
+
+static int64_t sndfileWriteSamples_stub(CSOUND *csound, void *h, MYFLT *p,
+                                   int64_t samples) {
+  return 0;
+}
+
+static int64_t sndfileReadSamples_stub(CSOUND *csound, void *h, MYFLT *p,
+                                  int64_t samples) {
+  return 0;
+}
+
+static int64_t sndfileSeek_stub(CSOUND *csound, void *h, int64_t frames,
+                           int32_t whence) {
+  return 0;
+}
+
+static void *sndfileOpen_stub(CSOUND *csound, const char *path, int32_t mode,
+                         SFLIB_INFO *sfinfo) {
+  return 0;
+}
+
+static void *sndfileOpenFd_stub(CSOUND *csound, int32_t fd, int32_t mode,
+                           SFLIB_INFO *sfinfo, int32_t close_desc) {
+  return 0;
+}
+
+static int32_t sndfileClose_stub(CSOUND *csound, void *sndfile) {
+  return 0;
+}
+
+static int32_t sndfileSetString_stub(CSOUND *csound, void *sndfile, int32_t str_type,
+                                const char *str) {
+  return 0;
+}
+
+static const char *sndfileStrError_stub(CSOUND *csound, void *sndfile) {
+  return NULL;
+}
+
+static int32_t sndfileCommand_stub(CSOUND *csound, void *handle, int32_t cmd,
+                              void *data, int32_t datasize) {
+  return 0;
+}
+
+/** Sets the callbacks for sndfile IO
+    NULL callbacks are replaced by stubs.
+ */
 PUBLIC void csoundSetSndfileCallbacks(CSOUND *csound, SNDFILE_CALLBACKS *p) {
   if (p == NULL) {
     csound->SndfileOpen = sndfileOpen;
@@ -320,22 +372,22 @@ PUBLIC void csoundSetSndfileCallbacks(CSOUND *csound, SNDFILE_CALLBACKS *p) {
     csound->SndfileStrError = sndfileStrError;
     csound->SndfileCommand = sndfileCommand;
   } else {
-    csound->SndfileOpen = p->sndfileOpen ? p->sndfileOpen : sndfileOpen;
-    csound->SndfileOpenFd = p->sndfileOpenFd ? p->sndfileOpenFd : sndfileOpenFd;
-    csound->SndfileClose = p->sndfileClose ? p->sndfileClose : sndfileClose;
-    csound->SndfileWrite = p->sndfileWrite ? p->sndfileWrite : sndfileWrite;
-    csound->SndfileRead = p->sndfileRead ? p->sndfileRead : sndfileRead;
+    csound->SndfileOpen = p->sndfileOpen ? p->sndfileOpen : sndfileOpen_stub;
+    csound->SndfileOpenFd = p->sndfileOpenFd ? p->sndfileOpenFd : sndfileOpenFd_stub;
+    csound->SndfileClose = p->sndfileClose ? p->sndfileClose : sndfileClose_stub;
+    csound->SndfileWrite = p->sndfileWrite ? p->sndfileWrite : sndfileWrite_stub;
+    csound->SndfileRead = p->sndfileRead ? p->sndfileRead : sndfileRead_stub;
     csound->SndfileWriteSamples =
-        p->sndfileWriteSamples ? p->sndfileWriteSamples : sndfileWriteSamples;
+        p->sndfileWriteSamples ? p->sndfileWriteSamples : sndfileWriteSamples_stub;
     csound->SndfileReadSamples =
-        p->sndfileReadSamples ? p->sndfileReadSamples : sndfileReadSamples;
-    csound->SndfileSeek = p->sndfileSeek ? p->sndfileSeek : sndfileSeek;
+        p->sndfileReadSamples ? p->sndfileReadSamples : sndfileReadSamples_stub;
+    csound->SndfileSeek = p->sndfileSeek ? p->sndfileSeek : sndfileSeek_stub;
     csound->SndfileSetString =
-        p->sndfileSetString ? p->sndfileSetString : sndfileSetString;
+        p->sndfileSetString ? p->sndfileSetString : sndfileSetString_stub;
     csound->SndfileStrError =
-        p->sndfileStrError ? p->sndfileStrError : sndfileStrError;
+        p->sndfileStrError ? p->sndfileStrError : sndfileStrError_stub;
     csound->SndfileCommand =
-        p->sndfileCommand ? p->sndfileCommand : sndfileCommand;
+        p->sndfileCommand ? p->sndfileCommand : sndfileCommand_stub;
   }
 }
 
@@ -4454,6 +4506,4 @@ INSTRTXT *csoundGetInstrument(CSOUND *csound, int32_t insno, const char *name) {
   return csound->engineState.instrtxtp[insno];
 }
 
-// #ifdef __cplusplus
-// }
-// #endif
+

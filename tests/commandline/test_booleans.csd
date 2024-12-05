@@ -20,7 +20,7 @@ instr 2
   while bi do
     prints "pass\n" ;; should print only once
     ix += 1
-    bi = ix == 0
+    bi = ix == 1
   od
 endin
 

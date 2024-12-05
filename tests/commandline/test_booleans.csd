@@ -15,12 +15,12 @@ instr 1
 endin
 
 instr 2
-  ix = 0
+  ix = 1
   bi = ix == 1
-  until bi do
+  while bi do
     prints "pass\n" ;; should print only once
     ix += 1
-    bi = ix == 1
+    bi = ix == 0
   od
 endin
 

@@ -22,6 +22,7 @@
 */
 
 #include "csoundCore.h"
+#include "soundfile.h"
 #include "soundio.h"
 #include "diskin2.h"
 #include <math.h>
@@ -68,9 +69,9 @@ static CS_NOINLINE void diskin2_read_buffer(CSOUND *csound,
         if (nsmps > (int32_t) p->bufSize)
           nsmps = (int32_t) p->bufSize;
         nsmps *= (int32_t) p->nChannels;
-        sflib_seek(p->sf, (sf_count_t) p->bufStartPos, SEEK_SET);
+        csound->SndfileSeek(csound, p->sf, (sf_count_t) p->bufStartPos, SEEK_SET);
         /* convert sample count to mono samples and read file */
-        i = (int32_t)sflib_read_MYFLT(p->sf, p->buf, (sf_count_t) nsmps);
+        i = (int32_t) csound->SndfileReadSamples(csound, p->sf, p->buf, (sf_count_t) nsmps);
         if (UNLIKELY(i < 0))  /* error ? */
           i = 0;    /* clear entire buffer to zero */
       }
@@ -294,8 +295,6 @@ int32_t soundin(CSOUND *csound, DISKIN2 *p){
     return ret;
 }
 
-int32_t diskin2_async_deinit(CSOUND *csound, void *p);
-
 static int32_t diskin2_init_(CSOUND *csound, DISKIN2 *p, int32_t stringname)
 {
     double  pos;
@@ -303,6 +302,7 @@ static int32_t diskin2_init_(CSOUND *csound, DISKIN2 *p, int32_t stringname)
     void    *fd;
     SFLIB_INFO sfinfo;
     int32_t     n;
+            
 
     /* check number of channels */
     p->nChannels = (int32_t)(p->OUTOCOUNT);
@@ -319,7 +319,7 @@ static int32_t diskin2_init_(CSOUND *csound, DISKIN2 *p, int32_t stringname)
     }
     /* set default format parameters */
     memset(&sfinfo, 0, sizeof(SFLIB_INFO));
-    sfinfo.samplerate = MYFLT2LONG(csound->esr);
+    sfinfo.samplerate = MYFLT2LONG(CS_ESR);
     sfinfo.channels = p->nChannels;
     /* check for user specified sample format */
     n = MYFLT2LONG(*p->iSampleFormat);
@@ -332,18 +332,18 @@ static int32_t diskin2_init_(CSOUND *csound, DISKIN2 *p, int32_t stringname)
     /* open file */
     /* FIXME: name can overflow with very long string */
     if (stringname==0){
-      if (csound->ISSTRCOD(*p->iFileCode))
+      if (IsStringCode(*p->iFileCode))
         strNcpy(name,get_arg_string(csound, *p->iFileCode), 1023);
-      else csound->strarg2name(csound, name, p->iFileCode, "soundin.",0);
+      else csound->StringArg2Name(csound, name, p->iFileCode, "soundin.",0);
     }
     else strNcpy(name, ((STRINGDAT *)p->iFileCode)->data, 1023);
 
-    fd = csound->FileOpen2(csound, &(p->sf), CSFILE_SND_R, name, &sfinfo,
+    fd = csound->FileOpen(csound, &(p->sf), CSFILE_SND_R, name, &sfinfo,
                            "SFDIR;SSDIR", CSFTYPE_UNKNOWN_AUDIO, 0);
     if (UNLIKELY(fd == NULL)) {
       return csound->InitError(csound,
                                Str("diskin2: %s: failed to open file (%s)"),
-                               name, Str(sflib_strerror(NULL)));
+                               name, Str(csound->SndfileStrError(csound,NULL)));
     }
     /* record file handle so that it will be closed at note-off */
     memset(&(p->fdch), 0, sizeof(FDCH));
@@ -379,15 +379,15 @@ static int32_t diskin2_init_(CSOUND *csound, DISKIN2 *p, int32_t stringname)
     /* set file parameters from header info */
     p->fileLength = (int32_t) sfinfo.frames;
     p->warpScale = 1.0;
-    if (MYFLT2LONG(csound->esr) != sfinfo.samplerate) {
+    if (MYFLT2LONG(CS_ESR) != sfinfo.samplerate) {
       if (LIKELY(p->winSize != 1)) {
         /* will automatically convert sample rate if interpolation is enabled */
-        p->warpScale = (double)sfinfo.samplerate / (double)csound->esr;
+        p->warpScale = (double)sfinfo.samplerate / (double)CS_ESR;
       }
       else {
         csound->Warning(csound, Str("diskin2: warning: file sample rate (%d) "
                                     "!= orchestra sr (%d)\n"),
-                        sfinfo.samplerate, MYFLT2LONG(csound->esr));
+                        sfinfo.samplerate, MYFLT2LONG(CS_ESR));
       }
     }
     /* wrap mode */
@@ -395,7 +395,7 @@ static int32_t diskin2_init_(CSOUND *csound, DISKIN2 *p, int32_t stringname)
     if (UNLIKELY(p->fileLength < 1L))
       p->wrapMode = 0;
     /* initialise read position */
-    pos = (double)*(p->iSkipTime) * (double)csound->esr * p->warpScale;
+    pos = (double)*(p->iSkipTime) * (double)CS_ESR * p->warpScale;
     pos *= (double)POS_FRAC_SCALE;
     p->pos_frac = (int64_t)(pos >= 0.0 ? (pos + 0.5) : (pos - 0.5));
     if (p->wrapMode) {
@@ -470,7 +470,7 @@ static int32_t diskin2_init_(CSOUND *csound, DISKIN2 *p, int32_t stringname)
         *start = 1;
       }
 #endif
-      csound->RegisterDeinitCallback(csound, p, diskin2_async_deinit);
+
       p->async = 1;
 
       /* print file information */
@@ -507,12 +507,14 @@ static int32_t diskin2_init_(CSOUND *csound, DISKIN2 *p, int32_t stringname)
     return OK;
 }
 
-int32_t diskin2_async_deinit(CSOUND *csound,  void *p){
+int32_t diskin2_async_deinit(CSOUND *csound, DISKIN2 *p){
 
+  if(p->async) { // deinit only needed in asybc MODE
     DISKIN_INST **top, *current, *prv;
-
     if ((top = (DISKIN_INST **)
-         csound->QueryGlobalVariable(csound, "DISKIN_INST")) == NULL) return NOTOK;
+         csound->QueryGlobalVariable(csound, "DISKIN_INST")) == NULL)
+      return NOTOK;
+
     current = *top;
     prv = NULL;
     while(current->diskin != (DISKIN2 *)p) {
@@ -538,8 +540,9 @@ int32_t diskin2_async_deinit(CSOUND *csound,  void *p){
 #endif
     csound->Free(csound, current);
     csound->DestroyCircularBuffer(csound, ((DISKIN2 *)p)->cb);
+  }
 
-    return OK;
+  return OK;
 }
 
 static inline void diskin2_file_pos_inc(DISKIN2 *p, int32_t *ndx)
@@ -563,8 +566,8 @@ int32_t diskin2_perf_synchronous(CSOUND *csound, DISKIN2 *p)
 {
     uint32_t offset = p->h.insdshead->ksmps_offset;
     uint32_t early  = p->h.insdshead->ksmps_no_end;
-    int      nsmps = CS_KSMPS;
-    int      chn, i, nn;
+    int32_t      nsmps = CS_KSMPS;
+    int32_t      chn, i, nn;
     double   d, frac_d, x, c, v, pidwarp_d;
     MYFLT    frac, a0, a1, a2, a3, onedwarp, winFact;
     int32_t  ndx;
@@ -744,7 +747,7 @@ int32_t diskin2_perf_synchronous(CSOUND *csound, DISKIN2 *p)
     return NOTOK;
 }
 
-int checkspace(void *p, int writeCheck);
+int32_t checkspace(void *p, int32_t writeCheck);
 
 int32_t diskin_file_read(CSOUND *csound, DISKIN2 *p)
 {
@@ -979,7 +982,7 @@ int32_t diskin2_perf_asynchronous(CSOUND *csound, DISKIN2 *p)
 
 uintptr_t diskin_io_thread(void *p){
     DISKIN_INST *current = (DISKIN_INST *) p;
-    int32_t wakeup = 1000*current->csound->ksmps/current->csound->esr;
+    int32_t wakeup = 1000*current->diskin->h.insdshead->ksmps/current->diskin->h.insdshead->esr;
     int32_t *start =
       current->csound->QueryGlobalVariable(current->csound,"DISKIN_THREAD_START");
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
@@ -1002,9 +1005,9 @@ int32_t diskin2_perf(CSOUND *csound, DISKIN2 *p) {
 
 
 
-static int32_t soundout_deinit(CSOUND *csound, void *pp)
+int32_t soundout_deinit(CSOUND *csound, void *pp)
 {
-    char    *opname = csound->GetOpcodeName(pp);
+    char    *opname = GetOpcodeName(pp);
     SNDCOM  *q;
 
     if (strcmp(opname, "soundouts") == 0)
@@ -1017,7 +1020,7 @@ static int32_t soundout_deinit(CSOUND *csound, void *pp)
       MYFLT *p0 = (MYFLT*) &(q->outbuf[0]);
       MYFLT *p1 = (MYFLT*) q->outbufp;
       if (p1 > p0) {
-        sflib_write_MYFLT(q->sf, p0, (sf_count_t) ((MYFLT*) p1 - (MYFLT*) p0));
+        csound->SndfileWriteSamples(csound, q->sf, p0, (sf_count_t) ((MYFLT*) p1 - (MYFLT*) p0));
         q->outbufp = (MYFLT*) &(q->outbuf[0]);
       }
       /* close file */
@@ -1044,7 +1047,7 @@ static int32_t sndo1set_(CSOUND *csound, void *pp, int32_t stringname)
     SFLIB_INFO sfinfo;
     //SNDOUTS *p = (SNDOUTS*) pp;
 
-    opname = csound->GetOpcodeName(pp);
+    opname = GetOpcodeName(pp);
     csound->Warning(csound, Str("%s is deprecated; use fout instead\n"),
                     opname);
     if (strcmp(opname, "soundouts") == 0 || strcmp(opname, "soundouts.i") == 0) {
@@ -1062,19 +1065,17 @@ static int32_t sndo1set_(CSOUND *csound, void *pp, int32_t stringname)
     if (q->fd != NULL)                  /* if file already open, */
       return OK;                        /* return now            */
 
-    csound->RegisterDeinitCallback(csound, pp, soundout_deinit);
-
     if (stringname==0){
-      if (csound->ISSTRCOD(*ifilcod))
+      if (IsStringCode(*ifilcod))
         strNcpy(name,get_arg_string(csound, *ifilcod), 1023);
-      else csound->strarg2name(csound, name, ifilcod, "soundout.",0);
+      else csound->StringArg2Name(csound, name, ifilcod, "soundout.",0);
     }
     else strNcpy(name, ((STRINGDAT *)ifilcod)->data, 1023);
 
     sfname = name;
     memset(&sfinfo, 0, sizeof(SFLIB_INFO));
     //sfinfo.frames = 0;
-    sfinfo.samplerate = MYFLT2LONG(csound->esr);
+    sfinfo.samplerate = MYFLT2LONG(((SNDOUT*) pp)->h.insdshead->esr);
     sfinfo.channels = nchns;
     switch (MYFLT2LONG(*iformat)) {
     case 1: format = AE_CHAR; break;
@@ -1092,13 +1093,13 @@ static int32_t sndo1set_(CSOUND *csound, void *pp, int32_t stringname)
     }
     sfname = csound->GetFileName(q->fd);
     if (format != AE_FLOAT)
-      sflib_command(q->sf, SFC_SET_CLIPPING, NULL, SFLIB_TRUE);
+      csound->SndfileCommand(csound,q->sf, SFC_SET_CLIPPING, NULL, SFLIB_TRUE);
     else
-      sflib_command(q->sf, SFC_SET_CLIPPING, NULL, SFLIB_FALSE);
+      csound->SndfileCommand(csound,q->sf, SFC_SET_CLIPPING, NULL, SFLIB_FALSE);
 #ifdef USE_DOUBLE
-    sflib_command(q->sf, SFC_SET_NORM_DOUBLE, NULL, SFLIB_FALSE);
+    csound->SndfileCommand(csound,q->sf, SFC_SET_NORM_DOUBLE, NULL, SFLIB_FALSE);
 #else
-    sflib_command(q->sf, SFC_SET_NORM_FLOAT, NULL, SFLIB_FALSE);
+    csound->SndfileCommand(csound,q->sf, SFC_SET_NORM_FLOAT, NULL, SFLIB_FALSE);
 #endif
     csound->Warning(csound, Str("%s: opening RAW outfile %s\n"),
                     opname, sfname);
@@ -1130,7 +1131,7 @@ int32_t soundout(CSOUND *csound, SNDOUT *p)
     for (nn = offset; nn < nsmps; nn++) {
       if (UNLIKELY(p->c.outbufp >= p->c.bufend)) {
 
-        sflib_write_MYFLT(p->c.sf, p->c.outbuf, p->c.bufend - p->c.outbuf);
+        csound->SndfileWriteSamples(csound, p->c.sf, p->c.outbuf, p->c.bufend - p->c.outbuf);
         p->c.outbufp = p->c.outbuf;
       }
       *(p->c.outbufp++) = p->asig[nn];
@@ -1151,7 +1152,7 @@ int32_t soundouts(CSOUND *csound, SNDOUTS *p)
     if (UNLIKELY(early)) nsmps -= early;
     for (nn = offset; nn < nsmps; nn++) {
       if (UNLIKELY(p->c.outbufp >= p->c.bufend)) {
-        sflib_write_MYFLT(p->c.sf, p->c.outbuf, p->c.bufend - p->c.outbuf);
+        csound->SndfileWriteSamples(csound, p->c.sf, p->c.outbuf, p->c.bufend - p->c.outbuf);
         p->c.outbufp = p->c.outbuf;
       }
       *(p->c.outbufp++) = p->asig1[nn];
@@ -1196,9 +1197,9 @@ static CS_NOINLINE void diskin2_read_buffer_array(CSOUND *csound,
         if (nsmps > (int32_t) p->bufSize)
           nsmps = (int32_t) p->bufSize;
         nsmps *= (int32_t) p->nChannels;
-        sflib_seek(p->sf, (sf_count_t) p->bufStartPos, SEEK_SET);
+        csound->SndfileSeek(csound, p->sf, (sf_count_t) p->bufStartPos, SEEK_SET);
         /* convert sample count to mono samples and read file */
-        i = (int32_t)sflib_read_MYFLT(p->sf, p->buf, (sf_count_t) nsmps);
+        i = (int32_t) csound->SndfileReadSamples(csound, p->sf, p->buf, (sf_count_t) nsmps);
         if (UNLIKELY(i < 0))  /* error ? */
           i = 0;    /* clear entire buffer to zero */
       }
@@ -1313,8 +1314,9 @@ static inline void diskin2_get_sample_array(CSOUND *csound,
     }
 }
 
-int32_t diskin2_async_deinit_array(CSOUND *csound,  void *p){
+int32_t diskin2_async_deinit_array(CSOUND *csound,  DISKIN2_ARRAY *p){
 
+  if(p->async) {
     DISKIN_INST **top, *current, *prv;
 
     if ((top = (DISKIN_INST **)
@@ -1346,7 +1348,7 @@ int32_t diskin2_async_deinit_array(CSOUND *csound,  void *p){
 
     csound->Free(csound, current);
     csound->DestroyCircularBuffer(csound, ((DISKIN2_ARRAY *)p)->cb);
-
+  }
     return OK;
 }
 
@@ -1543,7 +1545,7 @@ int32_t diskin_file_read_array(CSOUND *csound, DISKIN2_ARRAY *p)
 
 uintptr_t diskin_io_thread_array(void *p){
     DISKIN_INST *current = (DISKIN_INST *) p;
-    int32_t wakeup = 1000*current->csound->ksmps/current->csound->esr;
+    int32_t wakeup = 1000*current->diskin->h.insdshead->ksmps/current->diskin->h.insdshead->esr;
     int32_t *start =
       current->csound->QueryGlobalVariable(current->csound,
                                            "DISKIN_THREAD_START_ARRAY");
@@ -1581,7 +1583,7 @@ static int32_t diskin2_init_array(CSOUND *csound, DISKIN2_ARRAY *p,
     if (t->data) p->nChannels = t->sizes[0];
     /* set default format parameters */
     memset(&sfinfo, 0, sizeof(SFLIB_INFO));
-    sfinfo.samplerate = MYFLT2LONG(csound->esr);
+    sfinfo.samplerate = MYFLT2LONG(CS_ESR);
     sfinfo.channels = p->nChannels;
     /* check for user specified sample format */
     n = MYFLT2LONG(*p->iSampleFormat);
@@ -1594,18 +1596,18 @@ static int32_t diskin2_init_array(CSOUND *csound, DISKIN2_ARRAY *p,
     /* open file */
     /* FIXME: name can overflow with very long string */
     if (stringname==0){
-      if (csound->ISSTRCOD(*p->iFileCode))
+      if (IsStringCode(*p->iFileCode))
         strNcpy(name,get_arg_string(csound, *p->iFileCode), 1023);
-      else csound->strarg2name(csound, name, p->iFileCode, "soundin.",0);
+      else csound->StringArg2Name(csound, name, p->iFileCode, "soundin.",0);
     }
     else strNcpy(name, ((STRINGDAT *)p->iFileCode)->data, 1023);
 
-    fd = csound->FileOpen2(csound, &(p->sf), CSFILE_SND_R, name, &sfinfo,
+    fd = csound->FileOpen(csound, &(p->sf), CSFILE_SND_R, name, &sfinfo,
                            "SFDIR;SSDIR", CSFTYPE_UNKNOWN_AUDIO, 0);
     if (UNLIKELY(fd == NULL)) {
       return csound->InitError(csound,
                                Str("diskin2: %s: failed to open file: %s"),
-                               name, Str(sflib_strerror(NULL)));
+                               name, Str(csound->SndfileStrError(csound,NULL)));
     }
     /* record file handle so that it will be closed at note-off */
     memset(&(p->fdch), 0, sizeof(FDCH));
@@ -1626,7 +1628,7 @@ static int32_t diskin2_init_array(CSOUND *csound, DISKIN2_ARRAY *p,
       t->dimensions = 1;
       t->sizes = csound->Calloc(csound, sizeof(int32_t));
       t->sizes[0] = p->nChannels;
-      var  = t->arrayType->createVariable(csound, NULL);
+      var  = t->arrayType->createVariable(csound, NULL, &(p->h));
       t->arrayMemberSize = var->memBlockSize;
       memSize = var->memBlockSize*(t->sizes[0]);
       t->data = csound->Calloc(csound, memSize);
@@ -1660,15 +1662,15 @@ static int32_t diskin2_init_array(CSOUND *csound, DISKIN2_ARRAY *p,
     /* set file parameters from header info */
     p->fileLength = (int32_t) sfinfo.frames;
     p->warpScale = 1.0;
-    if (MYFLT2LONG(csound->esr) != sfinfo.samplerate) {
+    if (MYFLT2LONG(CS_ESR) != sfinfo.samplerate) {
       if (LIKELY(p->winSize != 1)) {
         /* will automatically convert sample rate if interpolation is enabled */
-        p->warpScale = (double)sfinfo.samplerate / (double)csound->esr;
+        p->warpScale = (double)sfinfo.samplerate / (double)CS_ESR;
       }
       else {
         csound->Warning(csound, Str("diskin2: warning: file sample rate (%d) "
                                     "!= orchestra sr (%d)\n"),
-                        sfinfo.samplerate, MYFLT2LONG(csound->esr));
+                        sfinfo.samplerate, MYFLT2LONG(CS_ESR));
       }
     }
     /* wrap mode */
@@ -1676,7 +1678,7 @@ static int32_t diskin2_init_array(CSOUND *csound, DISKIN2_ARRAY *p,
     if (UNLIKELY(p->fileLength < 1L))
       p->wrapMode = 0;
     /* initialise read position */
-    pos = (double)*(p->iSkipTime) * (double)csound->esr * p->warpScale;
+    pos = (double)*(p->iSkipTime) * (double)CS_ESR * p->warpScale;
     pos *= (double)POS_FRAC_SCALE;
     p->pos_frac = (int64_t)(pos >= 0.0 ? (pos + 0.5) : (pos - 0.5));
     if (p->wrapMode) {
@@ -1760,8 +1762,6 @@ static int32_t diskin2_init_array(CSOUND *csound, DISKIN2_ARRAY *p,
         csound->CreateThread(diskin_io_thread_array, *top);
       }
 #endif
-      csound->RegisterDeinitCallback(csound, (DISKIN2 *) p,
-                                     diskin2_async_deinit_array);
       p->async = 1;
 
       /* print file information */
@@ -2080,12 +2080,12 @@ static void soundin_read_buffer(CSOUND *csound, SOUNDIN_ *p, int32_t bufReadPos)
       /* number of sample frames to read */
       lsmps = p->fileLength - p->bufStartPos;
       if (lsmps > (int_least64_t) 0) {  /* if there is anything to read: */
-        nsmps = (lsmps < (int_least64_t) p->bufSize ? (int) lsmps : p->bufSize);
+        nsmps = (lsmps < (int_least64_t) p->bufSize ? (int32_t) lsmps : p->bufSize);
         /* convert sample count to mono samples and read file */
         nsmps *= (int32_t) p->nChannels;
         if (csound->oparms->realtime==0){
-          sflib_seek(p->sf, (sf_count_t) p->bufStartPos, SEEK_SET);
-          i = (int32_t) sflib_read_MYFLT(p->sf, p->buf, (sf_count_t) nsmps);
+          csound->SndfileSeek(csound, p->sf, (sf_count_t) p->bufStartPos, SEEK_SET);
+          i = (int32_t) csound->SndfileReadSamples(csound, p->sf, p->buf, (sf_count_t) nsmps);
         }
         else
           i = (int32_t) csound->ReadAsync(csound, p->fdch.fd, p->buf,
@@ -2146,7 +2146,7 @@ static int32_t sndinset_(CSOUND *csound, SOUNDIN_ *p, int32_t stringname)
     }
     /* set default format parameters */
     memset(&sfinfo, 0, sizeof(SFLIB_INFO));
-    sfinfo.samplerate = MYFLT2LONG(csound->esr);
+    sfinfo.samplerate = MYFLT2LONG(CS_ESR);
     sfinfo.channels = p->nChannels;
     /* check for user specified sample format */
     n = MYFLT2LONG(*p->iSampleFormat);
@@ -2165,14 +2165,14 @@ static int32_t sndinset_(CSOUND *csound, SOUNDIN_ *p, int32_t stringname)
     /* open file */
     /* FIXME: name can overflow with very long string */
     if (stringname==0){
-      if (csound->ISSTRCOD(*p->iFileCode))
+      if (IsStringCode(*p->iFileCode))
         strNcpy(name,get_arg_string(csound, *p->iFileCode), 1023);
-      else csound->strarg2name(csound, name, p->iFileCode, "soundin.",0);
+      else csound->StringArg2Name(csound, name, p->iFileCode, "soundin.",0);
     }
     else strNcpy(name, ((STRINGDAT *)p->iFileCode)->data, 1023);
 
     if (csound->oparms->realtime==0)
-      fd = csound->FileOpen2(csound, &(p->sf), CSFILE_SND_R, name, &sfinfo,
+      fd = csound->FileOpen(csound, &(p->sf), CSFILE_SND_R, name, &sfinfo,
                              "SFDIR;SSDIR", CSFTYPE_UNKNOWN_AUDIO, 0);
     else
       fd = csound->FileOpenAsync(csound, &(p->sf), CSFILE_SND_R, name, &sfinfo,
@@ -2182,7 +2182,7 @@ static int32_t sndinset_(CSOUND *csound, SOUNDIN_ *p, int32_t stringname)
       if (csound->oparms->realtime==0)
         return csound->InitError(csound,
                                Str("soundin: %s: failed to open file: %s"),
-                                 name, Str(sflib_strerror(NULL)));
+                                 name, Str(csound->SndfileStrError(csound,NULL)));
       else
         return csound->InitError(csound,
                                  Str("soundin: %s: failed to open file"), name);
@@ -2211,10 +2211,10 @@ static int32_t sndinset_(CSOUND *csound, SOUNDIN_ *p, int32_t stringname)
       return OK;
     /* set file parameters from header info */
     p->fileLength = (int_least64_t) sfinfo.frames;
-    if (MYFLT2LONG(csound->esr) != sfinfo.samplerate)
+    if (MYFLT2LONG(CS_ESR) != sfinfo.samplerate)
       csound->Warning(csound, Str("soundin: file sample rate (%d) "
                                   "!= orchestra sr (%d)\n"),
-                      sfinfo.samplerate, MYFLT2LONG(csound->esr));
+                      sfinfo.samplerate, MYFLT2LONG(CS_ESR));
     fmt = TYPE2ENC(sfinfo.format);
     typ = SF2TYPE(sfinfo.format);
     if ((fmt != AE_FLOAT && fmt != AE_DOUBLE) ||

@@ -22,11 +22,13 @@
     02110-1301 USA
 */
 
+#pragma once
+
 typedef struct {
         OPDS   h;
         MYFLT  *which, *when, *dur;
         MYFLT  *argums[VARGMAX-3];
-        int    midi;
+        int32_t    midi;
         INSDS  *kicked;
 } SCHED;
 
@@ -35,9 +37,9 @@ typedef struct {
         MYFLT  *trigger;
         MYFLT  *which, *when, *dur;
         MYFLT  *argums[VARGMAX-3];
-        int    todo;
+        int32_t    todo;
         MYFLT  abs_when;
-        int    midi;
+        int32_t    midi;
         INSDS  *kicked;
 } WSCHED;
 
@@ -47,7 +49,7 @@ typedef struct {
         MYFLT   *kamp, *xcps, *type;
         AUXCH   auxd;
         MYFLT   *sine;
-        int     lasttype;
+        int32_t     lasttype;
         int32    phs;
 } LFO;
 
@@ -73,7 +75,7 @@ typedef struct {
   OPDS  h;
   MYFLT *ktrig, *kstart, *kloop, *initndx, *kfn, *outargs[VARGMAX];
   int32  ndx;
-  int   nargs, done;
+  int32_t   nargs, done;
   int32  pfn;
   MYFLT *table;
 } TRIGSEQ;
@@ -82,9 +84,11 @@ typedef struct {
   OPDS  h;
   MYFLT *ktrig, *unit_time, *kstart, *kloop, *initndx, *kfn;
   int32 ndx;
-  int   done;
+  int32_t   done;
   double start, newtime;
   int32 pfn;
   MYFLT *table;
 } SEQTIM;
+
+
 

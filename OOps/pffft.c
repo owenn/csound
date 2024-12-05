@@ -154,7 +154,7 @@ typedef __m128 v4sf;
 /*
   ARM NEON support macros
 */
-#elif !defined(PFFFT_SIMD_DISABLE) && (defined(__arm__) || defined(IOS))
+#elif !defined(PFFFT_SIMD_DISABLE) && defined(HAVE_NEON) && (defined(__arm__) || defined(IOS))
 #  include <arm_neon.h>
 typedef float32x4_t v4sf;
 #  define SIMD_SZ 4
@@ -669,7 +669,7 @@ static NEVER_INLINE(void) radf4_ps(int32_t ido, int32_t l1, const v4sf *RESTRICT
         wi = LD_PS1(wa3[i-1]);
         VCPLXMULCONJ(cr4, ci4, wr, wi);
 
-        /* at this point, on SSE, five of "cr2 cr3 cr4 ci2 ci3 ci4" should be loaded in registers */
+        /* at this point32_t,  on SSE, five of "cr2 cr3 cr4 ci2 ci3 ci4" should be loaded in registers */
 
         tr1 = VADD(cr2,cr4);
         tr4 = VSUB(cr4,cr2);

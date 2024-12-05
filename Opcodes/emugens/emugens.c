@@ -107,8 +107,8 @@ typedef struct {
 
 
 static int32_t linlinarr1_init(CSOUND *csound, LINLINARR1 *p) {
-    int numitems = p->xs->sizes[0];
-    tabinit(csound, p->ys, numitems);
+    int32_t numitems = p->xs->sizes[0];
+    tabinit(csound, p->ys, numitems, &(p->h));
     CHECKARR1D(p->xs);
     CHECKARR1D(p->ys);
     return OK;
@@ -159,7 +159,7 @@ blendarray_init(CSOUND *csound, BLENDARRAY *p) {
     int32_t numitemsA = p->A->sizes[0];
     int32_t numitemsB = p->B->sizes[0];
     int32_t numitems = numitemsA < numitemsB ? numitemsA : numitemsB;
-    tabinit(csound, p->out, numitems);
+    tabinit(csound, p->out, numitems, &(p->h));
     p->numitems = numitems;
     return OK;
 }
@@ -299,7 +299,7 @@ typedef struct {
   OPDS h;
   MYFLT *r, *k, *irnd;
   MYFLT freqA4;
-  int rnd;
+  int32_t rnd;
 } PITCHCONV;
 
 static inline MYFLT
@@ -352,8 +352,8 @@ typedef struct {
     ARRAYDAT *outarr, *inarr;
     MYFLT *irnd;
     MYFLT freqA4;
-    int rnd;
-    int skip;
+    int32_t rnd;
+    int32_t skip;
 } PITCHCONV_ARR;
 
 
@@ -385,7 +385,7 @@ static int32_t
 ftom_arr_init(CSOUND *csound, PITCHCONV_ARR *p) {
     p->freqA4 = csound->GetA4(csound);
     p->rnd = (int)*p->irnd;
-    tabinit(csound, p->outarr, p->inarr->sizes[0]);
+    tabinit(csound, p->outarr, p->inarr->sizes[0], &(p->h));
     p->skip = 0;
     ftom_arr(csound, p);
     p->skip = 1;
@@ -416,7 +416,7 @@ mtof_arr(CSOUND *csound, PITCHCONV_ARR *p) {
 static int32_t
 mtof_arr_init(CSOUND *csound, PITCHCONV_ARR *p) {
     p->freqA4 = csound->GetA4(csound);
-    tabinit(csound, p->outarr, p->inarr->sizes[0]);
+    tabinit(csound, p->outarr, p->inarr->sizes[0], &(p->h));
     p->skip = 0;
     mtof_arr(csound, p);
     p->skip = 1;
@@ -700,7 +700,7 @@ static int32_t bpfcos_k_kKK_kr(CSOUND *csound, BPF_k_kKK *p) {
     MYFLT *xs = p->xs->data;
     MYFLT *ys = p->ys->data;
     MYFLT x = *p->x;
-    int32_t i = bpfarr_find(x, xs, N, p->lastidx);
+    int32_t i = (int32_t) bpfarr_find(x, xs, N, p->lastidx);
     MYFLT x0, y0, x1, y1, dx;
     if(i == -1) {
         *p->y = ys[0];
@@ -753,7 +753,7 @@ static int32_t bpf_a_aKK_kr(CSOUND *csound, BPF_k_kKK *p) {
 
     for(n=offset; n<nsmps; n++) {
         x = in[n];
-        i = bpfarr_find(x, xs, N, lastidx);
+        i = (int32_t) bpfarr_find(x, xs, N, lastidx);
         if(i == -1) {
             out[n] = firsty;
             lastidx = -1;
@@ -798,7 +798,7 @@ static int32_t bpfcos_a_aKK_kr(CSOUND *csound, BPF_k_kKK *p) {
 
     for(n=offset; n<nsmps; n++) {
         x = in[n];
-        i = bpfarr_find(x, xs, N, lastidx);
+        i = (int32_t) bpfarr_find(x, xs, N, lastidx);
         if(i == -1) {
             out[n] = firsty;
             lastidx = -1;
@@ -846,7 +846,7 @@ static int32_t bpf_kk_kKKK_kr(CSOUND *csound, BPF_kk_kKKK *p) {
     MYFLT *ys = p->ys->data;
     MYFLT *zs = p->zs->data;
     MYFLT x = *p->x;
-    int32_t i = bpfarr_find(x, xs, N, p->lastidx);
+    int32_t i = (int32_t) bpfarr_find(x, xs, N, p->lastidx);
 
     if(i == -1) {
         *p->y = ys[0];
@@ -887,7 +887,7 @@ typedef struct {
 
 
 static int32_t bpf_K_Km_init(CSOUND *csound, BPF_K_Km *p) {
-    tabinit(csound, p->out, p->in->sizes[0]);
+  tabinit(csound, p->out, p->in->sizes[0], &(p->h));
     p->lastidx = -1;
     int32_t datalen = p->INOCOUNT - 1;
     if(datalen % 2)
@@ -897,7 +897,7 @@ static int32_t bpf_K_Km_init(CSOUND *csound, BPF_K_Km *p) {
     if(datalen >= BPF_MAXPOINTS)
         return INITERR(Str("bpf: too many pargs (max=256)"));
     int32_t N = p->in->sizes[0];
-    tabinit(csound, p->out, N);
+    tabinit(csound, p->out, N, &(p->h));
     return OK;
 }
 
@@ -918,7 +918,7 @@ static int32_t bpf_K_Km_kr(CSOUND *csound, BPF_K_Km *p) {
 
     for(idx=0; idx<N; idx++) {
         x = in[idx];
-        i = bpfx_find(data, x, datalen, lastidx);
+        i = (int32_t) bpfx_find(data, x, datalen, lastidx);
 
         if(i == -1) {
             out[idx] = firsty;
@@ -982,7 +982,7 @@ static int32_t bpf_a_am_kr(CSOUND *csound, BPF_a_am *p) {
 
     for(n=offset; n<nsmps; n++) {
         x = in[n];
-        i = bpfx_find(data, x, datalen, lastidx);
+        i = (int32_t) bpfx_find(data, x, datalen, (int32_t) lastidx);
         if(i == -1) {
             out[n] = firsty;
             lastidx = -1;
@@ -1024,7 +1024,7 @@ static int32_t bpfcos_a_am_kr(CSOUND *csound, BPF_a_am *p) {
 
     for(n=offset; n<nsmps; n++) {
         x = in[n];
-        i = bpfx_find(data, x, datalen, lastidx);
+        i = (int32_t) bpfx_find(data, x, datalen, (int32_t) lastidx);
         if(i == -1) {
             out[n] = firsty;
             lastidx = -1;
@@ -1077,7 +1077,7 @@ static int32_t bpfcos_K_Km_kr(CSOUND *csound, BPF_K_Km *p) {
 
     for(idx=0; idx<N; idx++) {
         x = in[idx];
-        i = bpfx_find(data, x, datalen, lastidx);
+        i = (int32_t) bpfx_find(data, x, datalen, (int32_t) lastidx);
 
         if(i == -1) {
             out[idx] = firsty;
@@ -1125,7 +1125,7 @@ static int32_t _pcs[] = {9, 11, 0, 2, 4, 5, 7};
 
 static MYFLT ntomfunc(CSOUND *csound, char *note) {
     char *n = note;
-    uint32_t notelen = strlen(note);
+    uint32_t notelen = (uint32_t) strlen(note);
     int32_t octave = n[0] - '0';
     int32_t pcidx = n[1] - 'A';
     if (pcidx < 0 || pcidx >= 7) {
@@ -1336,7 +1336,7 @@ typedef struct {
     int32_t mode;
 } Cmp2_array1;
 
-static int32_t op2mode(char *op, int32_t opsize) {
+static int32_t op2mode(char *op, int64_t opsize) {
     int32_t mode;
     if (op[0] == '>') {
         mode = (opsize == 1) ? 0 : 1;
@@ -1354,7 +1354,7 @@ static int32_t op2mode(char *op, int32_t opsize) {
 
 static int32_t
 cmp_init(CSOUND *csound, Cmp *p) {
-    int32_t mode = op2mode(p->op->data, p->op->size-1);
+    int32_t mode = (int32_t) op2mode(p->op->data, p->op->size-1);
     if(mode == -1) {
         return INITERR(Str("cmp: unknown operator. "
                            "Expecting <, <=, >, >=, ==, !="));
@@ -1366,8 +1366,8 @@ cmp_init(CSOUND *csound, Cmp *p) {
 static int32_t
 cmparray1_init(CSOUND *csound, Cmp_array1 *p) {
     int32_t N = p->in->sizes[0];
-    tabinit(csound, p->out, N);
-    int32_t mode = op2mode(p->op->data, p->op->size-1);
+    tabinit(csound, p->out, N, &(p->h));
+    int32_t mode = (int32_t) op2mode(p->op->data, p->op->size-1);
     if(mode == -1) {
         return INITERR(Str("cmp: unknown operator. "
                            "Expecting <, <=, >, >=, ==, !="));
@@ -1384,8 +1384,8 @@ cmparray2_init(CSOUND *csound, Cmp_array2 *p) {
 
     // make sure that we can put the result in `out`,
     // grow the array if necessary
-    tabinit(csound, p->out, N);
-    int32_t mode = op2mode(p->op->data, p->op->size-1);
+    tabinit(csound, p->out, N, &(p->h));
+    int32_t mode = (int32_t) op2mode(p->op->data, p->op->size-1);
     if(mode == -1) {
         return INITERR(Str("cmp: unknown operator. "
                            "Expecting <, <=, >, >=, ==, !="));
@@ -1397,12 +1397,12 @@ cmparray2_init(CSOUND *csound, Cmp_array2 *p) {
 static int32_t
 cmp2array1_init(CSOUND *csound, Cmp2_array1 *p) {
     int32_t N = p->in->sizes[0];
-    tabinit(csound, p->out, N);
+    tabinit(csound, p->out, N, &(p->h));
 
     char *op1 = (char*)p->op1->data;
-    int32_t op1size = p->op1->size - 1;
+    int64_t op1size = p->op1->size - 1;
     char *op2 = (char*)p->op2->data;
-    int32_t op2size = p->op2->size - 1;
+    int64_t op2size = p->op2->size - 1;
     int32_t mode;
 
     if (op1[0] == '<') {
@@ -1683,11 +1683,11 @@ typedef struct {
 static int32_t
 tabslice_init(CSOUND *csound, TABSLICE *p) {
     FUNC *ftpsrc, *ftpdst;
-    ftpsrc = csound->FTnp2Finde(csound, p->fnsrc);
+    ftpsrc = csound->FTFind(csound, p->fnsrc);
     if(UNLIKELY(ftpsrc == NULL))
         return INITERRF("Source table not found: %d", (int)(*p->fnsrc));
     p->ftpsrc = ftpsrc;
-    ftpdst = csound->FTnp2Finde(csound, p->fndst);
+    ftpdst = csound->FTFind(csound, p->fndst);
     if(UNLIKELY(ftpdst == NULL))
         return INITERRF("Destination table not found: %d", (int)(*p->fndst));
     p->ftpdst = ftpdst;
@@ -1720,10 +1720,10 @@ tabslice_k(CSOUND *csound, TABSLICE *p) {
 
 static int32_t
 tabslice_allk(CSOUND *csound, TABSLICE *p) {
-    p->ftpsrc = csound->FTnp2Finde(csound, p->fnsrc);
+    p->ftpsrc = csound->FTFind(csound, p->fnsrc);
     if(UNLIKELY(p->ftpsrc == NULL))
         return PERFERRF("Source table not found: %d", (int)*p->fnsrc);
-    p->ftpdst = csound->FTnp2Finde(csound, p->fndst);
+    p->ftpdst = csound->FTFind(csound, p->fndst);
     if(UNLIKELY(p->ftpdst == NULL))
         return PERFERRF("Destination table not found: %d", (int)*p->fnsrc);
     return tabslice_k(csound, p);
@@ -1731,7 +1731,7 @@ tabslice_allk(CSOUND *csound, TABSLICE *p) {
 
 static int32_t
 tabslice_i(CSOUND *csound, TABSLICE *p) {
-    int error = tabslice_init(csound, p);
+    int32_t error = tabslice_init(csound, p);
     if(error)
         return NOTOK;
     return tabslice_k(csound, p);
@@ -1760,7 +1760,7 @@ typedef struct {
     OPDS h;
     MYFLT *tabnum, *value, *kstart, *kend, *kstep;
     FUNC *tab;
-    int lastTabnum;
+    int32_t lastTabnum;
 } FTSET;
 
 
@@ -1776,7 +1776,7 @@ ftset_common(CSOUND *csound, FTSET *p) {
     IGN(csound);
     FUNC *tab = p->tab;
     MYFLT *data = tab->ftable;
-    int tablen = tab->flen;
+    int32_t tablen = tab->flen;
     int32_t start = (int32_t)*p->kstart;
     int32_t end = (int32_t)*p->kend;
     int32_t step = (int32_t)*p->kstep;
@@ -1793,7 +1793,7 @@ ftset_common(CSOUND *csound, FTSET *p) {
         return OK;
     }
 
-    for(int i=start; i<end; i+=step) {
+    for(int32_t i=start; i<end; i+=step) {
         data[i] = value;
     }
     return OK;
@@ -1801,10 +1801,10 @@ ftset_common(CSOUND *csound, FTSET *p) {
 
 static int32_t
 ftset_k(CSOUND *csound, FTSET *p) {
-    int tabnum = (int)(*p->tabnum);
+    int32_t tabnum = (int)(*p->tabnum);
     FUNC *tab;
     if(UNLIKELY(tabnum != p->lastTabnum)) {
-        tab = csound->FTnp2Finde(csound, p->tabnum);
+        tab = csound->FTFind(csound, p->tabnum);
         if(UNLIKELY(tab == NULL))
             return PERFERRF(Str("Table %d not found"), tabnum);
         p->tab = tab;
@@ -1817,7 +1817,7 @@ ftset_k(CSOUND *csound, FTSET *p) {
 
 static int32_t
 ftset_i(CSOUND *csound, FTSET *p) {
-    FUNC *tab = csound->FTnp2Finde(csound, p->tabnum);
+    FUNC *tab = csound->FTFind(csound, p->tabnum);
     if(UNLIKELY(tab == NULL))
         return INITERRF(Str("Table %d not found"), (int)(*p->tabnum));
     p->tab = tab;
@@ -1847,26 +1847,26 @@ typedef struct {
     ARRAYDAT *out;
     MYFLT *ifn, *kstart, *kend, *kstep;
     FUNC * ftp;
-    int numitems;
+    int32_t numitems;
 } TAB2ARRAY;
 
 static int
 tab2array_init(CSOUND *csound, TAB2ARRAY *p) {
     FUNC *ftp;
-    ftp = csound->FTnp2Finde(csound, p->ifn);
+    ftp = csound->FTFind(csound, p->ifn);
     if (UNLIKELY(ftp == NULL))
         return NOTOK;
     p->ftp = ftp;
-    int start = (int)*p->kstart;
-    int end   = (int)*p->kend;
-    int step  = (int)*p->kstep;
+    int32_t start = (int)*p->kstart;
+    int32_t end   = (int)*p->kend;
+    int32_t step  = (int)*p->kstep;
     if (end < 1)
         end = ftp->flen;
-    int numitems = (int) (ceil((end - start) / (float)step));
+    int32_t numitems = (int) (ceil((end - start) / (float)step));
     if(numitems < 0) {
         return PERFERR(Str("tab2array: cannot copy a negative number of items"));
     }
-    tabinit(csound, p->out, numitems);
+    tabinit(csound, p->out, numitems, &(p->h));
     p->numitems = numitems;
     return OK;
 }
@@ -1874,12 +1874,12 @@ tab2array_init(CSOUND *csound, TAB2ARRAY *p) {
 static int
 tab2array_k(CSOUND *csound, TAB2ARRAY *p) {
     FUNC *ftp = p->ftp;
-    int start = (int)*p->kstart;
-    int end   = (int)*p->kend;
-    int step  = (int)*p->kstep;
+    int32_t start = (int)*p->kstart;
+    int32_t end   = (int)*p->kend;
+    int32_t step  = (int)*p->kstep;
     if (end < 1)
         end = ftp->flen;
-    int numitems = (int) (ceil((end - start) / (double)step));
+    int32_t numitems = (int) (ceil((end - start) / (double)step));
     if(numitems < 0)
         return PERFERR(Str("tab2array: cannot copy a negative number of items"));
 
@@ -1889,7 +1889,7 @@ tab2array_k(CSOUND *csound, TAB2ARRAY *p) {
     MYFLT *out   = p->out->data;
     MYFLT *table = ftp->ftable;
 
-    int i, j=0;
+    int32_t i, j=0;
     for(i=start; i<end; i+=step) {
         out[j++] = table[i];
     }
@@ -2151,7 +2151,7 @@ static int32_t arrprint_str(CSOUND *csound, ARRAYDAT *arr,
             currline[charswritten++] = ',';
             currline[charswritten++] = ' ';
         }
-        charswritten += sprintf(currline + charswritten, fmt, strs[i].data);
+        charswritten += snprintf(currline + charswritten, ARRPRINT_MAXLINE - charswritten, fmt, strs[i].data);
         if(charswritten >= linelength) {
             currline[charswritten+1] = '\0';
             csound->MessageS(csound, CSOUNDMSG_ORCH, " %s\n", (char*)currline);
@@ -2186,7 +2186,7 @@ static int32_t arrprint(CSOUND *csound, ARRAYDAT *arr,
             showidx = 1;
         }
         for(i=0; i<arr->sizes[0]; i++) {
-            charswritten += sprintf(currline+charswritten, fmt, in[i]);
+          charswritten += snprintf(currline+charswritten, ARRPRINT_MAXLINE - charswritten, fmt, in[i]);
             if(charswritten < linelength) {
                 currline[charswritten++] = ' ';
             } else {
@@ -2215,9 +2215,9 @@ static int32_t arrprint(CSOUND *csound, ARRAYDAT *arr,
         break;
     case 2:
         for(i=0; i<arr->sizes[0]; i++) {
-            charswritten += sprintf(currline+charswritten, " %3d: ", i);
+          charswritten += snprintf(currline+charswritten, ARRPRINT_MAXLINE - charswritten, " %3d: ", i);
             for(j=0; j<arr->sizes[1]; j++) {
-                charswritten += sprintf(currline+charswritten, fmt, *in);
+              charswritten += snprintf(currline+charswritten, ARRPRINT_MAXLINE - charswritten, fmt, *in);
                 if(charswritten < linelength) {
                     currline[charswritten++] = ' ';
                 }
@@ -2330,7 +2330,7 @@ ftprint_init(CSOUND *csound, FTPRINT *p) {
     p->numcols = (int32_t)*p->inumcols;
     if(p->numcols == 0)
         p->numcols = 10;
-    p->ftp = csound->FTnp2Finde(csound, p->ifn);
+    p->ftp = csound->FTFind(csound, p->ifn);
     int32_t trig = (int32_t)*p->ktrig;
 
     if (trig > 0) {
@@ -2341,7 +2341,7 @@ ftprint_init(CSOUND *csound, FTPRINT *p) {
 
 /** allow negative indices to count from the end
  */
-static int handle_negative_idx(uint32_t *out, int32_t idx, uint32_t length) {
+static int32_t handle_negative_idx(uint32_t *out, int32_t idx, uint32_t length) {
     if(idx >= 0) {
         *out = (uint32_t) idx;
         return OK;
@@ -2370,7 +2370,7 @@ ftprint_perf(CSOUND *csound, FTPRINT *p) {
     const uint32_t numcols = (uint32_t)p->numcols;
     const uint32_t step = (uint32_t)*p->kstep;
     uint32_t end, start;
-    int error = handle_negative_idx(&start, (int32_t)*p->kstart, ftplen);
+    int32_t error = handle_negative_idx(&start, (int32_t)*p->kstart, ftplen);
     if(error)
         return PERFERRF(Str("Could not handle start index: %d"),
                         (int32_t)*p->kstart);
@@ -2391,7 +2391,7 @@ ftprint_perf(CSOUND *csound, FTPRINT *p) {
     csound->MessageS(csound, CSOUNDMSG_ORCH,
                      "ftable %d:\n", (int32_t)*p->ifn);
     for(i=start; i < end; i+=step) {
-        charswritten += sprintf(currline+charswritten, fmt, ftable[i]);
+        charswritten += snprintf(currline+charswritten, ARRPRINT_MAXLINE - charswritten, fmt, ftable[i]);
         elemsprinted++;
         if(elemsprinted < numcols) {
             currline[charswritten++] = ' ';
@@ -2433,7 +2433,7 @@ array_binop_init(CSOUND *csound, BINOP_AAA *p) {
     for(i=0; i<p->in1->dimensions; i++) {
         numitems *= p->in1->sizes[i];
     }
-    tabinit(csound, p->out, numitems);
+    tabinit(csound, p->out, numitems, &(p->h));
     p->numitems = numitems;
     return OK;
 }
@@ -2479,12 +2479,12 @@ typedef struct {
 
 static int32_t
 ftexists_init(CSOUND *csound, FTEXISTS *p) {
-    int ifn = (int)*p->ifn;
+    int32_t ifn = (int)*p->ifn;
     if(ifn == 0) {
-        csound->DebugMsg(csound, Str("ftexists: table number is 0"));
+        csound->DebugMsg(csound, "%s", Str("ftexists: table number is 0"));
         *p->iout = 0.;
     }
-    FUNC *ftp = csound->FTnp2Find(csound, p->ifn);
+    FUNC *ftp = csound->FTFind(csound, p->ifn);
     *p->iout = (ftp != NULL) ? 1.0 : 0.0;
     return OK;
 }
@@ -2504,20 +2504,20 @@ ftexists_init(CSOUND *csound, FTEXISTS *p) {
 typedef struct {
     OPDS h;
     MYFLT *out;
-    int extracycles;
-    int numcycles;
+    int32_t extracycles;
+    int32_t numcycles;
     // 0 - tied note, has extra time;
     // 1 - fixed p3, no extra time
     // 2 - fixed p3, extra time
-    int mode;
-    int fired;
+    int32_t mode;
+    int32_t fired;
 } LASTCYCLE;
 
 static int32_t
 lastcycle_init(CSOUND *csound, LASTCYCLE *p) {
     MYFLT p3 = p->h.insdshead->p3.value;
     p->numcycles = p3 < 0 ? 0 :
-        (int)(p->h.insdshead->offtim * csound->GetKr(csound) + 0.5);
+        (int)(p->h.insdshead->offtim * CS_EKR + 0.5);
     p->extracycles = p->h.insdshead->xtratim;
     if(p->extracycles == 0) {
         p->h.insdshead->xtratim = 1;
@@ -2595,7 +2595,7 @@ lastcycle(CSOUND *csound, LASTCYCLE *p) {
 
 // make sure that the out string has enough allocated space
 // This can be run only at init time
-static int32_t _string_ensure(CSOUND *csound, STRINGDAT *s, int size) {
+static int32_t _string_ensure(CSOUND *csound, STRINGDAT *s, int32_t size) {
     if (s->size >= (size_t)size)
         return OK;
     csound->ReAlloc(csound, s->data, size);
@@ -2627,7 +2627,7 @@ stripl(CSOUND *csound, STR1_1 *p) {
     }
     str += idx0;
     size_t insize = strlen(str);
-    _string_ensure(csound, p->out, insize);
+    _string_ensure(csound, p->out, (int32_t) insize);
     memcpy(p->out->data, str, insize);
     return OK;
 }
@@ -2636,7 +2636,7 @@ static int32_t
 stripr(CSOUND *csound, STR1_1 *p) {
     // Trim trailing space
     char *str = p->in->data;
-    int size = strlen(str) - 1;
+    int32_t size = (int32_t) strlen(str) - 1;
     const char *end = str + size;
     while(size && isspace(*end)) {
         end--;
@@ -2667,9 +2667,9 @@ stripside(CSOUND *csound, STR1_1 *p) {
 }
 
 // returns length
-int _str_find_edges(const char *str, int *startidx) {
+int32_t _str_find_edges(const char *str, int32_t *startidx) {
     // left
-    int idx0 = 0;
+    int32_t idx0 = 0;
     while(isspace((unsigned char)*str)) {
         str++;
         idx0++;
@@ -2681,7 +2681,7 @@ int _str_find_edges(const char *str, int *startidx) {
     }
 
     // right
-    int size = strlen(str) - 1;
+    int32_t size = (int32_t) strlen(str) - 1;
     const char *end = str + size;
     while(size && isspace(*end)) {
         end--;
@@ -2694,8 +2694,8 @@ int _str_find_edges(const char *str, int *startidx) {
 
 static int32_t
 strstrip(CSOUND *csound, STR1_1 *p) {
-    int startidx;
-    int size = _str_find_edges(p->in->data, &startidx);
+    int32_t startidx;
+    int32_t size = _str_find_edges(p->in->data, &startidx);
     if(size > 0) {
         _string_ensure(csound, p->out, size);
         memcpy(p->out->data, p->in->data + startidx, size);
@@ -2723,12 +2723,12 @@ typedef struct {
     OPDS    h;
     STRINGDAT   *sfmt;
     MYFLT   *args[64];
-    int allocatedBuf;
-    int newline;
-    int fmtlen;
+    int32_t allocatedBuf;
+    int32_t newline;
+    int32_t fmtlen;
     STRINGDAT buf;
     STRINGDAT strseg;
-    int initDone;
+    int32_t initDone;
 } PRINTLN;
 
 
@@ -2773,13 +2773,13 @@ int32_t printsk_init(CSOUND *csound, PRINTLN *p) {
         p->allocatedBuf = 0;
     }
     p->newline = 0;
-    p->fmtlen = fmtlen;
+    p->fmtlen = (int32_t) fmtlen;
     p->initDone = 1;
     return OK;
 }
 
 int32_t println_init(CSOUND *csound, PRINTLN *p) {
-    int ret = printsk_init(csound, p);
+    int32_t ret = printsk_init(csound, p);
     if(ret != OK)
         return INITERR(Str("Error while inititalizing println"));
     p->newline = 1;
@@ -2787,11 +2787,11 @@ int32_t println_init(CSOUND *csound, PRINTLN *p) {
 }
 
 
-// #define IS_AUDIO_ARG(x) (csound->GetTypeForArg(x) == &CS_VAR_TYPE_A)
-#define IS_AUDIO_ARG(x) (!strcmp("a", csound->GetTypeForArg(x)->varTypeName))
+// #define IS_AUDIO_ARG(x) (GetTypeForArg(x) == &CS_VAR_TYPE_A)
+#define IS_AUDIO_ARG(x) (!strcmp("a", GetTypeForArg(x)->varTypeName))
 
-// #define IS_STRING_ARG(x) (csound->GetTypeForArg(x) == &CS_VAR_TYPE_S)
-#define IS_STRING_ARG(x) (!strcmp("S", csound->GetTypeForArg(x)->varTypeName))
+// #define IS_STRING_ARG(x) (GetTypeForArg(x) == &CS_VAR_TYPE_S)
+#define IS_STRING_ARG(x) (!strcmp("S", GetTypeForArg(x)->varTypeName))
 
 
 // This is taken from OOps/str_ops.c, with minor modifications to adapt it
@@ -2802,7 +2802,7 @@ sprintf_opcode_(CSOUND *csound,
                 PRINTLN *p,       /* opcode data structure pointer       */
                 STRINGDAT *str,   /* pointer to space for output string  */
                 const char *fmt,  /* format string                       */
-                int fmtlen,       /* length of format string             */
+                int32_t fmtlen,       /* length of format string             */
                 MYFLT **kvals,    /* array of argument pointers          */
                 int32_t numVals,      /* number of arguments             */
                 int32_t strCode)      /* bit mask for string arguments   */
@@ -2815,7 +2815,7 @@ sprintf_opcode_(CSOUND *csound,
     int32_t i = 0, j = 0, n;
     const char *segwaiting = NULL;
     int32_t maxChars;
-    int32_t strsegsize = p->strseg.size;
+    size_t strsegsize = p->strseg.size;
     char *strseg = p->strseg.data;
 
     const char *fmtend = fmt+(fmtlen-0);
@@ -2856,7 +2856,7 @@ sprintf_opcode_(CSOUND *csound,
 
         /* if already a segment waiting, then lets print it */
         if (segwaiting != NULL) {
-            maxChars = str->size - len;
+          maxChars = (int32_t) (str->size - len);
             strseg[i] = '\0';
             if (UNLIKELY(numVals <= 0)) {
                 return PERFERR(Str("insufficient arguments for format"));
@@ -2873,7 +2873,7 @@ sprintf_opcode_(CSOUND *csound,
             case 'X':
             case 'u':
             case 'c':
-                n = sprintf(outstring, strseg, (int32_t) MYFLT2LRND(*parm));
+                 n = snprintf(outstring, str->size, strseg, (int32_t) MYFLT2LRND(*parm));
                 break;
             case 'e':
             case 'E':
@@ -2881,20 +2881,20 @@ sprintf_opcode_(CSOUND *csound,
             case 'F':
             case 'g':
             case 'G':
-                n = sprintf(outstring, strseg, (double)*parm);
+                n = snprintf(outstring, str->size, strseg, (double)*parm);
                 break;
             case 's':
                 if(!IS_STRING_ARG(parm)) {
                     return PERFERRF(Str("String argument expected, but type is %s"),
-                                    csound->GetTypeForArg(parm)->varTypeName);
+                                    GetTypeForArg(parm)->varTypeName);
                 }
                 if (((STRINGDAT*)parm)->data == str->data) {
                     return PERFERR(Str("output argument may not be "
                                        "the same as any of the input args"));
                 }
                 if ((((STRINGDAT*)parm)->size+strlen(strseg)) >= (uint32_t)maxChars) {
-                    int32_t offs = outstring - str->data;
-                    int newsize = str->size  +
+                    size_t offs = outstring - str->data;
+                    size_t newsize = str->size  +
                       ((STRINGDAT*)parm)->size + strlen(strseg);
                     csound->Warning(csound, "%s",
                                     Str("println/printsk: Allocating extra "
@@ -2914,7 +2914,7 @@ sprintf_opcode_(CSOUND *csound,
             }
             if (n < 0 || n >= maxChars) {
                 /* safely detected excess string length */
-                int32_t offs = outstring - str->data;
+                size_t offs = outstring - str->data;
                 csound->Warning(csound, "%s",
                                 Str("Allocating extra memory for output string"));
                 str->data = csound->ReAlloc(csound, str->data, maxChars*2);
@@ -2990,165 +2990,165 @@ int32_t printsk_perf(CSOUND *csound, PRINTLN *p) {
 #define S(x) sizeof(x)
 
 static OENTRY emugens_localops[] = {
-    { "linlin", S(LINLIN1), 0, 2, "k", "kkkkk", NULL, (SUBR)linlin1_perf },
-    { "linlin", S(LINLIN1), 0, 2, "k", "kkkop", NULL, (SUBR)linlin1_perf },
-    { "linlin", S(LINLIN1), 0, 1, "i", "iiiop", (SUBR)linlin1_perf},
-    { "linlin", S(LINLINARR1), 0, 3, "k[]", "k[]kkOP", (SUBR)linlinarr1_init,
+    { "linlin", S(LINLIN1), 0, "k", "kkkkk", NULL, (SUBR)linlin1_perf },
+    { "linlin", S(LINLIN1), 0,  "k", "kkkop", NULL, (SUBR)linlin1_perf },
+    { "linlin", S(LINLIN1), 0,  "i", "iiiop", (SUBR)linlin1_perf},
+    { "linlin", S(LINLINARR1), 0,  "k[]", "k[]kkOP", (SUBR)linlinarr1_init,
       (SUBR)linlinarr1_perf},
-    { "linlin", S(LINLINARR1), 0, 1, "i[]", "i[]iiop", (SUBR)linlinarr1_i},
-    { "linlin", S(BLENDARRAY), 0, 3, "k[]", "kk[]k[]OP",
+    { "linlin", S(LINLINARR1), 0,  "i[]", "i[]iiop", (SUBR)linlinarr1_i},
+    { "linlin", S(BLENDARRAY), 0,  "k[]", "kk[]k[]OP",
       (SUBR)blendarray_init, (SUBR)blendarray_perf},
-    { "linlin", S(BLENDARRAY), 0, 1, "i[]", "ii[]i[]op", (SUBR)blendarray_i},
-    { "lincos", S(LINLIN1), 0, 2, "k", "kkkOP", NULL, (SUBR)lincos_perf },
-    { "lincos", S(LINLIN1), 0, 1, "i", "iiiop", (SUBR)lincos_perf },
+    { "linlin", S(BLENDARRAY), 0,  "i[]", "ii[]i[]op", (SUBR)blendarray_i},
+    { "lincos", S(LINLIN1), 0,  "k", "kkkOP", NULL, (SUBR)lincos_perf },
+    { "lincos", S(LINLIN1), 0,  "i", "iiiop", (SUBR)lincos_perf },
 
-    { "xyscale", S(XYSCALE), 0, 2, "k", "kkkkkk", NULL, (SUBR)xyscale },
-    { "xyscale", S(XYSCALE), 0, 3, "k", "kkiiii", (SUBR)xyscalei_init,
+    { "xyscale", S(XYSCALE), 0,  "k", "kkkkkk", NULL, (SUBR)xyscale },
+    { "xyscale", S(XYSCALE), 0,  "k", "kkiiii", (SUBR)xyscalei_init,
         (SUBR)xyscalei },
 
-    { "mtof", S(PITCHCONV), 0, 3, "k", "k", (SUBR)mtof_init, (SUBR)mtof },
-    { "mtof", S(PITCHCONV), 0, 1, "i", "i", (SUBR)mtof_init },
-    { "mtof", S(PITCHCONV_ARR), 0, 3, "k[]", "k[]",
+    { "mtof", S(PITCHCONV), 0,  "k", "k", (SUBR)mtof_init, (SUBR)mtof },
+    { "mtof", S(PITCHCONV), 0,  "i", "i", (SUBR)mtof_init },
+    { "mtof", S(PITCHCONV_ARR), 0,  "k[]", "k[]",
       (SUBR)mtof_arr_init, (SUBR)mtof_arr },
-    { "mtof", S(PITCHCONV_ARR), 0, 1, "i[]", "i[]", (SUBR)mtof_arr_init },
+    { "mtof", S(PITCHCONV_ARR), 0,  "i[]", "i[]", (SUBR)mtof_arr_init },
 
-    { "ftom", S(PITCHCONV), 0, 3,  "k", "ko", (SUBR)ftom_init, (SUBR)ftom},
-    { "ftom", S(PITCHCONV), 0, 1,  "i", "io", (SUBR)ftom_init},
-    { "ftom", S(PITCHCONV_ARR), 0, 3,  "k[]", "k[]o",
+    { "ftom", S(PITCHCONV), 0,   "k", "ko", (SUBR)ftom_init, (SUBR)ftom},
+    { "ftom", S(PITCHCONV), 0,   "i", "io", (SUBR)ftom_init},
+    { "ftom", S(PITCHCONV_ARR), 0,   "k[]", "k[]o",
       (SUBR)ftom_arr_init, (SUBR)ftom_arr},
-    { "ftom", S(PITCHCONV_ARR), 0, 1,  "i[]", "i[]o",
+    { "ftom", S(PITCHCONV_ARR), 0,   "i[]", "i[]o",
       (SUBR)ftom_arr_init, (SUBR)ftom_arr},
 
 
-    { "pchtom", S(PITCHCONV), 0, 1, "i", "i", (SUBR)pchtom },
-    { "pchtom", S(PITCHCONV), 0, 2, "k", "k", NULL, (SUBR)pchtom },
+    { "pchtom", S(PITCHCONV), 0,  "i", "i", (SUBR)pchtom },
+    { "pchtom", S(PITCHCONV), 0,  "k", "k", NULL, (SUBR)pchtom },
 
-    { "bpf.k_kM", S(BPFX), 0, 3, "k", "kM", (SUBR)bpfx_init, (SUBR)bpfx_k },
-    { "bpfcos.k_kM", S(BPFX), 0, 3, "k", "kM", (SUBR)bpfx_init, (SUBR)bpfxcos_k },
+    { "bpf.k_kM", S(BPFX), 0,  "k", "kM", (SUBR)bpfx_init, (SUBR)bpfx_k },
+    { "bpfcos.k_kM", S(BPFX), 0,  "k", "kM", (SUBR)bpfx_init, (SUBR)bpfxcos_k },
 
-    { "bpf.i_im", S(BPFX), 0, 1, "i", "im", (SUBR)bpfx_i },
-    { "bpfcos.i_im", S(BPFX), 0, 1, "i", "im", (SUBR)bpfxcos_i },
+    { "bpf.i_im", S(BPFX), 0,  "i", "im", (SUBR)bpfx_i },
+    { "bpfcos.i_im", S(BPFX), 0,  "i", "im", (SUBR)bpfxcos_i },
 
-    { "bpf.K_KM", S(BPF_K_Km), 0, 3, "k[]", "k[]M", (SUBR)bpf_K_Km_init, (SUBR)bpf_K_Km_kr },
-    { "bpfcos.K_KM", S(BPF_K_Km), 0, 3, "k[]", "k[]M", (SUBR)bpf_K_Km_init, (SUBR)bpfcos_K_Km_kr },
+    { "bpf.K_KM", S(BPF_K_Km), 0,  "k[]", "k[]M", (SUBR)bpf_K_Km_init, (SUBR)bpf_K_Km_kr },
+    { "bpfcos.K_KM", S(BPF_K_Km), 0,  "k[]", "k[]M", (SUBR)bpf_K_Km_init, (SUBR)bpfcos_K_Km_kr },
 
-    { "bpf.a_aM", S(BPF_a_am), 0, 3, "a", "aM", (SUBR)bpf_a_am_init, (SUBR)bpf_a_am_kr },
-    { "bpfcos.a_aM", S(BPF_a_am), 0, 3, "a", "aM", (SUBR)bpf_a_am_init, (SUBR)bpfcos_a_am_kr },
+    { "bpf.a_aM", S(BPF_a_am), 0,  "a", "aM", (SUBR)bpf_a_am_init, (SUBR)bpf_a_am_kr },
+    { "bpfcos.a_aM", S(BPF_a_am), 0,  "a", "aM", (SUBR)bpf_a_am_init, (SUBR)bpfcos_a_am_kr },
 
-    { "bpf.k_kKK", S(BPF_k_kKK), 0, 3, "k", "kk[]k[]", (SUBR)bpf_k_kKK_init, (SUBR)bpf_k_kKK_kr },
-    { "bpfcos.k_kKK", S(BPF_k_kKK), 0, 3, "k", "kk[]k[]", (SUBR)bpf_k_kKK_init, (SUBR)bpfcos_k_kKK_kr },
+    { "bpf.k_kKK", S(BPF_k_kKK), 0,  "k", "kk[]k[]", (SUBR)bpf_k_kKK_init, (SUBR)bpf_k_kKK_kr },
+    { "bpfcos.k_kKK", S(BPF_k_kKK), 0,  "k", "kk[]k[]", (SUBR)bpf_k_kKK_init, (SUBR)bpfcos_k_kKK_kr },
 
-    { "bpf.k_kII", S(BPF_k_kKK), 0, 3, "k", "ki[]i[]", (SUBR)bpf_k_kKK_init, (SUBR)bpf_k_kKK_kr },
-    { "bpfcos.k_kII", S(BPF_k_kKK), 0, 3, "k", "ki[]i[]", (SUBR)bpf_k_kKK_init, (SUBR)bpfcos_k_kKK_kr },
+    { "bpf.k_kII", S(BPF_k_kKK), 0,  "k", "ki[]i[]", (SUBR)bpf_k_kKK_init, (SUBR)bpf_k_kKK_kr },
+    { "bpfcos.k_kII", S(BPF_k_kKK), 0,  "k", "ki[]i[]", (SUBR)bpf_k_kKK_init, (SUBR)bpfcos_k_kKK_kr },
 
-    { "bpf.a_aKK", S(BPF_k_kKK), 0, 3, "a", "ak[]k[]", (SUBR)bpf_k_kKK_init, (SUBR)bpf_a_aKK_kr },
-    { "bpfcos.a_aKK", S(BPF_k_kKK), 0, 3, "a", "ak[]k[]", (SUBR)bpf_k_kKK_init, (SUBR)bpfcos_a_aKK_kr },
+    { "bpf.a_aKK", S(BPF_k_kKK), 0,  "a", "ak[]k[]", (SUBR)bpf_k_kKK_init, (SUBR)bpf_a_aKK_kr },
+    { "bpfcos.a_aKK", S(BPF_k_kKK), 0,  "a", "ak[]k[]", (SUBR)bpf_k_kKK_init, (SUBR)bpfcos_a_aKK_kr },
 
-    { "bpf.a_aII", S(BPF_k_kKK), 0, 3, "a", "ai[]i[]", (SUBR)bpf_k_kKK_init, (SUBR)bpf_a_aKK_kr },
-    { "bpfcos.a_aII", S(BPF_k_kKK), 0, 3, "a", "ai[]i[]", (SUBR)bpf_k_kKK_init, (SUBR)bpfcos_a_aKK_kr },
+    { "bpf.a_aII", S(BPF_k_kKK), 0,  "a", "ai[]i[]", (SUBR)bpf_k_kKK_init, (SUBR)bpf_a_aKK_kr },
+    { "bpfcos.a_aII", S(BPF_k_kKK), 0,  "a", "ai[]i[]", (SUBR)bpf_k_kKK_init, (SUBR)bpfcos_a_aKK_kr },
 
-    { "bpf.i_iII", S(BPF_k_kKK), 0, 1, "i", "ii[]i[]", (SUBR)bpf_k_kKK_ir },
-    { "bpfcos.i_iII", S(BPF_k_kKK), 0, 1, "i", "ii[]i[]", (SUBR)bpfcos_k_kKK_ir },
+    { "bpf.i_iII", S(BPF_k_kKK), 0,  "i", "ii[]i[]", (SUBR)bpf_k_kKK_ir },
+    { "bpfcos.i_iII", S(BPF_k_kKK), 0,  "i", "ii[]i[]", (SUBR)bpfcos_k_kKK_ir },
 
-    { "bpf.kk_kKKK", S(BPF_kk_kKKK), 0, 3, "kk", "kk[]k[]k[]", (SUBR)bpf_kk_kKKK_init, (SUBR)bpf_kk_kKKK_kr },
+    { "bpf.kk_kKKK", S(BPF_kk_kKKK), 0,  "kk", "kk[]k[]k[]", (SUBR)bpf_kk_kKKK_init, (SUBR)bpf_kk_kKKK_kr },
     // TODO
 
-    { "bpf.kk_kIII", S(BPF_kk_kKKK), 0, 3, "kk", "ki[]i[]i[]", (SUBR)bpf_kk_kKKK_init, (SUBR)bpf_kk_kKKK_kr },
+    { "bpf.kk_kIII", S(BPF_kk_kKKK), 0,  "kk", "ki[]i[]i[]", (SUBR)bpf_kk_kKKK_init, (SUBR)bpf_kk_kKKK_kr },
     // TODO
 
-    { "bpf.ii_iIII", S(BPF_kk_kKKK), 0, 1, "ii", "ii[]i[]i[]", (SUBR)bpf_kk_kKKK_ir },
+    { "bpf.ii_iIII", S(BPF_kk_kKKK), 0,  "ii", "ii[]i[]i[]", (SUBR)bpf_kk_kKKK_ir },
     // TODO
 
 
-    { "ntom.i", S(NTOM), 0, 1, "i", "S", (SUBR)ntom },
-    { "ntom.k", S(NTOM), 0, 3, "k", "S", (SUBR)ntom, (SUBR)ntom },
+    { "ntom.i", S(NTOM), 0,  "i", "S", (SUBR)ntom },
+    { "ntom.k", S(NTOM), 0,  "k", "S", (SUBR)ntom, (SUBR)ntom },
 
-    { "mton.i", S(MTON), 0, 1, "S", "i", (SUBR)mton },
-    { "mton.k", S(MTON), 0, 3, "S", "k", (SUBR)mton, (SUBR)mton },
+    { "mton.i", S(MTON), 0,  "S", "i", (SUBR)mton },
+    { "mton.k", S(MTON), 0,  "S", "k", (SUBR)mton, (SUBR)mton },
 
-    { "ntof.i", S(NTOM), 0, 1, "i", "S", (SUBR)ntof },
-    { "ntof.k", S(NTOM), 0, 3, "k", "S", (SUBR)ntof, (SUBR)ntof },
+    { "ntof.i", S(NTOM), 0,  "i", "S", (SUBR)ntof },
+    { "ntof.k", S(NTOM), 0,  "k", "S", (SUBR)ntof, (SUBR)ntof },
 
-    { "cmp", S(Cmp), 0, 3, "a", "aSa", (SUBR)cmp_init, (SUBR)cmp_aa,},
-    { "cmp", S(Cmp), 0, 3, "a", "aSk", (SUBR)cmp_init, (SUBR)cmp_ak },
-    { "cmp", S(Cmp_array1), 0, 3, "k[]", "k[]Sk",
+    { "cmp", S(Cmp), 0,  "a", "aSa", (SUBR)cmp_init, (SUBR)cmp_aa,},
+    { "cmp", S(Cmp), 0,  "a", "aSk", (SUBR)cmp_init, (SUBR)cmp_ak },
+    { "cmp", S(Cmp_array1), 0,  "k[]", "k[]Sk",
       (SUBR)cmparray1_init, (SUBR)cmparray1_k },
-    { "cmp", S(Cmp_array1), 0, 1, "i[]", "i[]Si", (SUBR)cmparray1_i },
+    { "cmp", S(Cmp_array1), 0,  "i[]", "i[]Si", (SUBR)cmparray1_i },
 
-    { "cmp", S(Cmp_array2), 0, 3, "k[]", "k[]Sk[]",
+    { "cmp", S(Cmp_array2), 0,  "k[]", "k[]Sk[]",
       (SUBR)cmparray2_init, (SUBR)cmparray2_k },
-    { "cmp", S(Cmp_array2), 0, 1, "i[]", "i[]Si[]",
+    { "cmp", S(Cmp_array2), 0,  "i[]", "i[]Si[]",
       (SUBR)cmparray2_i },
-    { "cmp", S(Cmp2_array1), 0, 3, "k[]", "kSk[]Sk",
+    { "cmp", S(Cmp2_array1), 0,  "k[]", "kSk[]Sk",
       (SUBR)cmp2array1_init, (SUBR)cmp2array1_k },
-    { "cmp", S(Cmp2_array1), 0, 1, "i[]", "iSi[]Si", (SUBR)cmp2array1_i},
+    { "cmp", S(Cmp2_array1), 0,  "i[]", "iSi[]Si", (SUBR)cmp2array1_i},
 
 
-    { "##or",  S(BINOP_AAA), 0, 3, "k[]", "k[]k[]",
+    { "##or",  S(BINOP_AAA), 0,  "k[]", "k[]k[]",
       (SUBR)array_binop_init, (SUBR)array_or},
-    { "##and", S(BINOP_AAA), 0, 3, "k[]", "k[]k[]",
+    { "##and", S(BINOP_AAA), 0,  "k[]", "k[]k[]",
       (SUBR)array_binop_init, (SUBR)array_and},
-    { "reshapearray", S(ARRAYRESHAPE), 0, 1, "", ".[]io", (SUBR)arrayreshape},
+    { "reshapearray", S(ARRAYRESHAPE), 0,  "", ".[]io", (SUBR)arrayreshape},
 
-    { "ftslicei", S(TABSLICE), TB, 1, "", "iioop", (SUBR)tabslice_i },
+    { "ftslicei", S(TABSLICE), TB,  "", "iioop", (SUBR)tabslice_i },
 
-    { "ftslice.perf", S(TABSLICE),  TB, 3, "", "iiOOP",
+    { "ftslice.perf", S(TABSLICE),  TB,  "", "iiOOP",
       (SUBR)tabslice_init, (SUBR)tabslice_k},
 
-    { "ftslice.onlyperf", S(TABSLICE),  TB, 2, "", "kkOOP",
+    { "ftslice.onlyperf", S(TABSLICE),  TB,  "", "kkOOP",
       NULL, (SUBR)tabslice_allk},
 
-    { "ftset.i", S(FTSET), TW, 1, "", "iioop", (SUBR)ftset_i },
-    { "ftset.k", S(FTSET), TW, 3, "", "kkOOP", (SUBR)ftset_init, (SUBR)ftset_k },
+    { "ftset.i", S(FTSET), TW,  "", "iioop", (SUBR)ftset_i },
+    { "ftset.k", S(FTSET), TW,  "", "kkOOP", (SUBR)ftset_init, (SUBR)ftset_k },
 
-    { "tab2array", S(TAB2ARRAY), TR, 3, "k[]", "iOOP",
+    { "tab2array", S(TAB2ARRAY), TR,  "k[]", "iOOP",
       (SUBR)tab2array_init, (SUBR)tab2array_k},
-    { "tab2array", S(TAB2ARRAY), TR, 1, "i[]", "ioop", (SUBR)tab2array_i},
+    { "tab2array", S(TAB2ARRAY), TR,  "i[]", "ioop", (SUBR)tab2array_i},
 
-    { "printarray", S(ARRAYPRINTK), 0, 3, "", "k[]J",
+    { "printarray", S(ARRAYPRINTK), 0,  "", "k[]J",
       (SUBR)arrayprint_init, (SUBR)arrayprint_perf},
-    { "printarray", S(ARRAYPRINTK), 0, 3, "", "k[]kS",
+    { "printarray", S(ARRAYPRINTK), 0,  "", "k[]kS",
       (SUBR)arrayprint_init, (SUBR)arrayprint_perf},
-    { "printarray.k_notrig", S(ARRAYPRINT), 0, 3, "", "k[]S",
+    { "printarray.k_notrig", S(ARRAYPRINT), 0,  "", "k[]S",
       (SUBR)arrayprint_init_notrig, (SUBR)arrayprint_perf_notrig},
 
-    { "printarray", S(ARRAYPRINTK), 0, 3, "", "k[]kSS",
+    { "printarray", S(ARRAYPRINTK), 0,  "", "k[]kSS",
       (SUBR)arrayprint_init, (SUBR)arrayprint_perf},
 
-    { "printarray.k_notrig", S(ARRAYPRINT), 0, 3, "", "k[]SS",
+    { "printarray.k_notrig", S(ARRAYPRINT), 0,  "", "k[]SS",
       (SUBR)arrayprint_init_notrig, (SUBR)arrayprint_perf_notrig},
 
 
-    { "printarray.i", S(ARRAYPRINT), 0, 1, "", "i[]", (SUBR)arrayprint_i},
-    { "printarray.fmt_i", S(ARRAYPRINT), 0, 1, "", "i[]S", (SUBR)arrayprintf_i},
-    { "printarray.fmt_label_i", S(ARRAYPRINT), 0, 1, "", "i[]SS",
+    { "printarray.i", S(ARRAYPRINT), 0,  "", "i[]", (SUBR)arrayprint_i},
+    { "printarray.fmt_i", S(ARRAYPRINT), 0,  "", "i[]S", (SUBR)arrayprintf_i},
+    { "printarray.fmt_label_i", S(ARRAYPRINT), 0,  "", "i[]SS",
       (SUBR)arrayprintf_i},
 
-    { "printarray", S(ARRAYPRINTK), 0, 3, "", "S[]J",
+    { "printarray", S(ARRAYPRINTK), 0,  "", "S[]J",
       (SUBR)arrayprint_init, (SUBR)arrayprint_perf},
-    { "printarray", S(ARRAYPRINTK), 0, 3, "", "S[]kS",
+    { "printarray", S(ARRAYPRINTK), 0,  "", "S[]kS",
       (SUBR)arrayprint_init, (SUBR)arrayprint_perf},
 
-    { "printarray", S(ARRAYPRINT), 0, 3, "", "S[]S",
+    { "printarray", S(ARRAYPRINT), 0,  "", "S[]S",
       (SUBR)arrayprint_init_notrig, (SUBR)arrayprint_perf_notrig},
 
-    { "printarray", S(ARRAYPRINT), 0, 3, "", "S[]SS",
+    { "printarray", S(ARRAYPRINT), 0,  "", "S[]SS",
       (SUBR)arrayprint_init_notrig, (SUBR)arrayprint_perf_notrig},
 
-    { "ftprint", S(FTPRINT), TR, 3, "", "iPOOPo",
+    { "ftprint", S(FTPRINT), TR,  "", "iPOOPo",
       (SUBR)ftprint_init, (SUBR)ftprint_perf },
 
-    { "ftexists", S(FTEXISTS), TR, 1, "i", "i",
+    { "ftexists", S(FTEXISTS), TR,  "i", "i",
       (SUBR)ftexists_init},
-    { "ftexists", S(FTEXISTS), TR, 3, "k", "k",
+    { "ftexists", S(FTEXISTS), TR,  "k", "k",
       (SUBR)ftexists_init, (SUBR)ftexists_init},
-    { "lastcycle", S(LASTCYCLE), 0, 3, "k", "",
+    { "lastcycle", S(LASTCYCLE), 0,  "k", "",
       (SUBR)lastcycle_init, (SUBR)lastcycle},
-    { "strstrip.i_side", S(STR1_1), 0, 1, "S", "SS", (SUBR)stripside},
-    { "strstrip.i", S(STR1_1), 0, 1, "S", "S", (SUBR)strstrip},
-    { "println", S(PRINTLN), 0, 3, "", "SN",
+    { "strstrip.i_side", S(STR1_1), 0,  "S", "SS", (SUBR)stripside},
+    { "strstrip.i", S(STR1_1), 0,  "S", "S", (SUBR)strstrip},
+    { "println", S(PRINTLN), 0,  "", "SN",
       (SUBR)println_init, (SUBR)println_perf},
-    { "printsk", S(PRINTLN), 0, 3, "", "SN",
+    { "printsk", S(PRINTLN), 0,  "", "SN",
       (SUBR)printsk_init, (SUBR)printsk_perf}
 };
 

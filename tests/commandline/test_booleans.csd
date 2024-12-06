@@ -8,17 +8,21 @@ nchnls=1
 instr 1
   bi = 9 == 10 ;; false
   if bi then
-    prints "fail\n"
+    exitnow(-1)
   else
     prints "pass\n"
   endif
 endin
 
 instr 2
-  ix = 1
+  ix = 0
   bi = ix == 1
-  while bi do
-    prints "pass\n" ;; should print only once
+  until bi do
+    if ix > 0 then
+       exitnow(-1)
+    else
+      prints "pass\n"
+    endif
     ix += 1
     bi = ix == 1
   od

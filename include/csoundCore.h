@@ -722,7 +722,7 @@ static inline double intpow1(double x, int32_t n) {
   return ans;
 }
 
-/**
+  /**
  * Binary power function
  */
 static inline double intpow(MYFLT x, int32_t n) {
@@ -741,18 +741,18 @@ static inline int32_t byte_order(void) {
   return (!*((char *)&one));
 }
 
-/**
- * checks for string code in p-fields
- */
-static inline int32_t isstrcod(MYFLT xx) {
-  int32_t sel = (byte_order() + 1) & 1;
+  /**
+   * checks for string code in p-fields
+   */
+  static inline int32_t isstrcod(MYFLT xx){
 #ifdef USE_DOUBLE
-  union {
-    double d;
-    int32_t i[2];
-  } z;
-  z.d = xx;
-  return ((z.i[sel] & 0x7ff00000) == 0x7ff00000);
+    int32_t sel = (byte_order()+1)&1;
+    union {
+      double d;
+      int32_t i[2];
+    } z;
+    z.d = xx;
+    return ((z.i[sel]&0x7ff00000)==0x7ff00000);
 #else
   union {
     float f;

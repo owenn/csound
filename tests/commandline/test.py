@@ -139,9 +139,8 @@ def runTest():
 	["test_asig_as_array.csd", "test using a-sig with array get/set syntax"],
 	["test_arrays_negative_dimension_fail.csd",
              "test expected failure with negative dimension size and array", 1],
-
+	["test_booleans.csd", "tests using boolean data-types"],
 	["test_audio_in.csd", "test the parsing of the 'in' operator as opcode"],
-    
 
 	["test_empty_conditional_branches.csd", "tests that empty branches do not cause compiler issues"],
 	["test_empty_instr.csd", "tests that empty instruments do not cause compiler issues"],
@@ -178,7 +177,6 @@ def runTest():
     ["test_plusname.csd", "test +Name for instr name"],
     ["testnewline.csd", "test newline in statements"],
     ["testmidichannels.csd", "test use of mapped multiport channels"],
-    ["test_max_table_len.csd", "test max table length"],
     ["test_instr_type.csd", "test instr type and variables"],
     ["test_delete_instr.csd", "test creating and deleting instr"],
     ["test_create_instr.csd", "testing creating and scheduling instr"],

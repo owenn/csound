@@ -810,6 +810,9 @@ int32_t useropcd1(CSOUND *csound, UOPCODE *p)
   /* check if instrument was deactivated (e.g. by perferror) */
   if (!p->ip)                                         /* loop to last opds */
     while (CS_PDS && CS_PDS->nxtp) CS_PDS = CS_PDS->nxtp;
+
+  this_instr->ksmps_offset = 0; /* reset sample-accuracy offset */
+  this_instr->ksmps_no_end = 0;  /* reset end of loop samples */
   return OK;
 }
 
@@ -930,6 +933,8 @@ int32_t useropcd2(CSOUND *csound, UOPCODE *p)
       CS_PDS = CS_PDS->nxtp;
     }
   }
+  p->ip->ksmps_offset = 0; /* reset sample-accuracy offset */
+  p->ip->ksmps_no_end = 0;  /* reset end of loop samples */
   return OK;
 }
 

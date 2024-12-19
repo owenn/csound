@@ -614,6 +614,25 @@ int32_t insert_event(CSOUND *csound, int32_t insno, EVTBLK *newevtp)
   return 0;
 }
 
+/** offsetsmps
+ *  returns the sample accurate offset at i or k time
+ *
+ *  [i/k]offs offsetsmps
+*/    
+int32 sa_offset(CSOUND *csound, AOP *p){
+  *p->r = p->h.insdshead->ksmps_offset;
+  return OK;
+}
+
+/** earlysmps
+ *  returns the sample accurate early exit length at k time
+ *
+ *  kearly earlysmps
+*/    
+int32 sa_early(CSOUND *csound, AOP *p){
+  *p->r = p->h.insdshead->ksmps_no_end;
+  return OK;
+}
 
 /* insert a MIDI instr copy into active list */
 /*  then run an init pass                    */

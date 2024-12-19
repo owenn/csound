@@ -702,6 +702,9 @@ int32_t useropcd1(CSOUND *csound, UOPCODE *p)
         current = current->next;
       }
 
+      this_instr->ksmps_offset = 0; /* reset sample-accuracy offset for UDO */
+      this_instr->ksmps_no_end = 0;  /* reset end of loop samples for UDO */
+
       /*  run each opcode  */
       if ((opstart = (OPDS *) (this_instr->nxtp)) != NULL) {
         int32_t error = 0;
@@ -810,8 +813,6 @@ int32_t useropcd1(CSOUND *csound, UOPCODE *p)
   if (!p->ip)                                         /* loop to last opds */
     while (CS_PDS && CS_PDS->nxtp) CS_PDS = CS_PDS->nxtp;
 
-  this_instr->ksmps_offset = 0; /* reset sample-accuracy offset */
-  this_instr->ksmps_no_end = 0;  /* reset end of loop samples */
   return OK;
 }
 

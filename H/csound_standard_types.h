@@ -45,6 +45,7 @@ extern "C" {
     extern const CS_TYPE CS_VAR_TYPE_B;
     extern const CS_TYPE CS_VAR_TYPE_b;
     extern const CS_TYPE CS_VAR_TYPE_ARRAY;
+    extern const CS_TYPE CS_VAR_TYPE_OPCODE; 
     extern const CS_TYPE CS_VAR_TYPE_INSTR; 
 
     typedef struct arrayVarInit {

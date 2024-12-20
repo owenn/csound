@@ -225,6 +225,13 @@ extern "C" {
     AUXCH   auxch;
   } SPECDAT;
 
+  /**
+   * OPCODE REF type
+   */
+  typedef struct opcodeRef {
+    struct oentries *entries;
+    int32_t readonly;
+  }  OPCODEREF;
   
   /**
    * Type definition for arrays

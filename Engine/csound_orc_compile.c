@@ -1871,8 +1871,8 @@ if (engineState != &csound->engineState) {
   return CSOUND_SUCCESS;
 }
 
-extern void sanitize(CSOUND *csound);
-
+void sanitize(CSOUND *csound);
+void addOpcodeRefs(CSOUND *csound);
 /**
    Parse and compile an orchestra given on an string (OPTIONAL)
    if str is NULL the string is taken from the internal corfile
@@ -1891,6 +1891,9 @@ int32_t csoundCompileOrcInternal(CSOUND *csound, const char *str, int32_t async)
     memcpy((void *)&csound->exitjmp, (void *)&tmpExitJmp, sizeof(jmp_buf));
     return retVal;
   }
+
+  // add opcode ref vars
+  addOpcodeRefs(csound);
   root = csoundParseOrc(csound, str);
   if (LIKELY(root != NULL)) {
     retVal = csoundCompileTreeInternal(csound, root, async);

@@ -3278,14 +3278,13 @@ PUBLIC void csoundSetExitGraphCallback(CSOUND *csound,
 /*
  * OPCODES
  */
-//void add_to_symbtab(CSOUND *csound, OENTRY *ep);
-
 static CS_NOINLINE int32_t opcode_list_new_oentry(CSOUND *csound,
                                               const OENTRY *ep)
 {
   CONS_CELL *head;
   OENTRY *entryCopy;
   char *shortName;
+  int32_t ret = 0;
 
   if (UNLIKELY(ep->opname == NULL || csound->opcodes == NULL))
     return CSOUND_ERROR;
@@ -3307,7 +3306,7 @@ static CS_NOINLINE int32_t opcode_list_new_oentry(CSOUND *csound,
     csound->Free(csound, shortName);
   }
 
-  return 0;
+  return ret;
 }
 
 PUBLIC int32_t csoundAppendOpcode(CSOUND *csound,

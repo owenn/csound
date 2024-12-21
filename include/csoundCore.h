@@ -232,6 +232,16 @@ extern "C" {
     struct oentries *entries;
     int32_t readonly;
   }  OPCODEREF;
+
+  /**
+   * OPCODE type
+   */
+  typedef struct opcodeObj {
+    struct opds *opds;
+    void *dataspace;
+    int32_t readonly;
+  } OPCODEOBJ;
+
   
   /**
    * Type definition for arrays

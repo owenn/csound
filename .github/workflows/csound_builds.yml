@@ -7,7 +7,6 @@ env:
 on:
   push:
     branches:
-      - master
       - csound6
   pull_request:
     branches:

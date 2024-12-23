@@ -1653,6 +1653,8 @@ PUBLIC int32_t csoundCompileTreeInternal(CSOUND *csound, TREE *root,
   // memory will be freed on merge.
   var = typeTable->globalPool->head;
   while(var != NULL) {
+    // check if variable memory has not yet been allocated
+    if(var->memBlock == NULL) {
     size_t memSize = CS_VAR_TYPE_OFFSET + var->memBlockSize;
     CS_VAR_MEM* varMem = (CS_VAR_MEM*) csound->Calloc(csound, memSize);
     varMem->varType = var->varType;
@@ -1660,6 +1662,7 @@ PUBLIC int32_t csoundCompileTreeInternal(CSOUND *csound, TREE *root,
     if (var->initializeVariableMemory != NULL) {
       var->initializeVariableMemory(csound, var, &varMem->value);
     } else  memset(&varMem->value , 0, var->memBlockSize);
+    }
     var = var->next;
   }
 
@@ -1792,6 +1795,7 @@ if (UNLIKELY(csound->synterrcnt)) {
   free_typetable(csound, typeTable);
   return CSOUND_ERROR;
  }
+
 
 
 if (engineState != &csound->engineState) {
@@ -2213,8 +2217,8 @@ void debugPrintCsound(CSOUND *csound) {
   CS_VARIABLE *gVar = csound->engineState.varPool->head;
   count = 0;
   while (gVar != NULL) {
-    csound->Message(csound, "  %d) %s:%s\n", count++, gVar->varName,
-                    gVar->varType->varTypeName);
+    csound->Message(csound, "  %d) %s:%s (%p)\n", count++, gVar->varName,
+                    gVar->varType->varTypeName, &(gVar->memBlock->value));
     gVar = gVar->next;
   }
   current = &(csound->engineState.instxtanchor);

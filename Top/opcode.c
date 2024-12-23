@@ -31,6 +31,8 @@
 /* And suppressing deprecated Oct 2015 -- JPff */
 #include "csoundCore.h"
 #include "csound_standard_types.h"
+#include "compile_ops.h"
+#include "csound_orc.h"
 #include <ctype.h>
 #include "interlocks.h"
 
@@ -235,25 +237,43 @@ CS_VARIABLE *addGlobalVariable(CSOUND *csound, ENGINE_STATE *engineState, CS_TYP
                                char *name, void *typeArg); 
 
 void addOpcodeRefs(CSOUND *csound) {
-  CONS_CELL *head;
+  CONS_CELL *head, *item;
   const CS_TYPE *type = &CS_VAR_TYPE_OPCODEREF;
   CS_VARIABLE *var;
   OENTRY *ep;
   char *name;
-  OPCODEREF ref = {NULL, 1};
+  OPCODEREF ref = {NULL, 1}, *dest;
 
   head = cs_hash_table_values(csound, csound->opcodes);
   while (head != NULL) {
-    ep = head->value;
+    item = head->value;
+    ep = item->value;
     name = get_opcode_short_name(csound, ep->opname);
+
     if (csoundFindVariableWithName(csound, csound->engineState.varPool, name) ==
         NULL) {
       var = addGlobalVariable(csound, &csound->engineState, (CS_TYPE *) type, name, NULL);
       if(var != NULL) {
        ref.entries = find_opcode2(csound, name);
-       type->copyValue(csound, type, &(var->memBlock->value), &ref, NULL);
+       dest = (OPCODEREF *) &(var->memBlock->value);
+       type->copyValue(csound, type, dest, &ref, NULL);
       } else csound->Warning(csound, "could not create opcode ref for %s\n", name);
     }
     head = head->next;
   }
+}
+
+int32_t opcode_info(CSOUND *csound, OPINFO *p) {
+  OENTRY *ep = p->ref->entries->entries[0];
+  int n, nep =  p->ref->entries->count;
+  
+  csound->Message(csound, "%s: %d overloads\n",
+       get_opcode_short_name(csound, ep->opname),
+                nep);
+  for(n = 0; n < nep; n++) {
+    ep = p->ref->entries->entries[n];
+    csound->Message(csound, "%s in types: %s out types: %s\n",
+                    ep->opname, ep->intypes, ep->outypes);
+  }
+  return OK;
 }

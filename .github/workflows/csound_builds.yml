@@ -103,22 +103,22 @@ jobs:
           $Env:VCREDIST_CXXAMP_DIR="C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Redist\MSVC\${Env:RedistVersion}\x64\Microsoft.VC142.CXXAMP"
           $Env:VCREDIST_OPENMP_DIR="C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Redist\MSVC\${Env:RedistVersion}\x64\Microsoft.VC142.OpenMP"
           iscc /o. installer\\windows\\csound6_x64_github.iss
-      - name: Upload installer
-        uses: actions/upload-artifact@v2
-        with:
-          name: Csound6_x64-${{env.CSOUND_VERSION}}.${{github.run_number}}-windows-x64-installer
-          path: ./Csound6_x64-windows_x86_64-*.exe
-          if-no-files-found: error
-      - name: Upload zip
-        uses: actions/upload-artifact@v2
-        with:
-          name: csound-${{env.CSOUND_VERSION}}-${{github.run_number}}-windows-x64-binaries
-          path: |
-            ./build/Release/*.exe
-            ./build/Release/*.dll
-            ./build/Release/*.pyd
-            ./build/Release/csound64.lib
-            ./build/*.jar
-            ./build/*.py
-            ./include/
-          if-no-files-found: error
+      # - name: Upload installer
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: Csound6_x64-${{env.CSOUND_VERSION}}.${{github.run_number}}-windows-x64-installer
+      #     path: ./Csound6_x64-windows_x86_64-*.exe
+      #     if-no-files-found: error
+      # - name: Upload zip
+      #   uses: actions/upload-artifact@v2
+      #   with:
+      #     name: csound-${{env.CSOUND_VERSION}}-${{github.run_number}}-windows-x64-binaries
+      #     path: |
+      #       ./build/Release/*.exe
+      #       ./build/Release/*.dll
+      #       ./build/Release/*.pyd
+      #       ./build/Release/csound64.lib
+      #       ./build/*.jar
+      #       ./build/*.py
+      #       ./include/
+      #     if-no-files-found: error
